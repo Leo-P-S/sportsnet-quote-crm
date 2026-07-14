@@ -72,6 +72,7 @@ export default function InvoiceView({ data, user, onNew }) {
     link.click()
   }
 
+
   const formatDate = (dateString) => {
     if (!dateString) return ''
     const d = new Date(dateString)
@@ -93,7 +94,7 @@ export default function InvoiceView({ data, user, onNew }) {
         </div>
       </div>
 
-      <div className="invoice-paper" ref={invoiceRef}>
+      <div className="invoice-paper" ref={invoiceRef} style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
         {/* Header */}
         <div className="invoice-header">
           <div className="invoice-company">
