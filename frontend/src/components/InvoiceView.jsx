@@ -100,9 +100,7 @@ export default function InvoiceView({ data, user, onNew }) {
             {user?.logoBase64 ? (
               <img src={user.logoBase64} alt="Logo Empresa" style={{width:'100px', height:'100px', objectFit:'contain'}} />
             ) : (
-              <div className="invoice-logo-placeholder">
-                <span>LOGO EMPRESA</span>
-              </div>
+              <div style={{width: '100px', height: '100px'}}></div>
             )}
             <div className="invoice-company-details">
               <h2>{user?.companyName || 'EMPRESA EJEMPLO EIRL'}</h2>
