@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { getTeam, linkAlmacenador, unlinkAlmacenador } from '../api/api'
 
 export default function TeamManager({ user }) {
   const [team, setTeam] = useState([])
@@ -14,12 +15,7 @@ export default function TeamManager({ user }) {
   const fetchTeam = async () => {
     setLoading(true)
     try {
-      // Assuming api wrapper exists or just using fetch
-      const res = await fetch('http://localhost:5000/api/auth/team', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      })
-      if (!res.ok) throw new Error('Error fetching team')
-      const data = await res.json()
+      const { data } = await getTeam()
       setTeam(data)
     } catch (err) {
       console.error(err)
@@ -34,21 +30,12 @@ export default function TeamManager({ user }) {
     setSuccess('')
     setLoading(true)
     try {
-      const res = await fetch('http://localhost:5000/api/auth/team/link', {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ linkCode })
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Error al vincular')
+      await linkAlmacenador(linkCode)
       setSuccess('Almacenador vinculado correctamente.')
       setLinkCode('')
       fetchTeam()
     } catch (err) {
-      setError(err.message)
+      setError(err.response?.data?.error || err.message || 'Error al vincular')
     } finally {
       setLoading(false)
     }
@@ -59,14 +46,10 @@ export default function TeamManager({ user }) {
     
     setLoading(true)
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/team/unlink/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      })
-      if (!res.ok) throw new Error('Error al desvincular')
+      await unlinkAlmacenador(id)
       fetchTeam()
     } catch (err) {
-      alert(err.message)
+      alert(err.response?.data?.error || err.message || 'Error al desvincular')
     } finally {
       setLoading(false)
     }

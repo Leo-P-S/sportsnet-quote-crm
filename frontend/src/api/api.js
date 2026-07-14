@@ -42,4 +42,14 @@ export const updateUserByAdmin = (id, data) => api.put(`/admin/users/${id}`, dat
 export const getUserCustomers = (id) => api.get(`/admin/users/${id}/customers`)
 export const getUserQuotes = (id) => api.get(`/admin/users/${id}/quotes`)
 
+// Team Management
+export const getTeam = () => api.get('/auth/team')
+export const linkAlmacenador = (linkCode) => api.post('/auth/team/link', { linkCode })
+export const unlinkAlmacenador = (id) => api.delete(`/auth/team/unlink/${id}`)
+
+// Inventory
+export const getInventory = () => api.get('/inventory')
+export const createInventory = (data) => api.post('/inventory', data)
+export const updateInventory = (id, data) => api.put(`/inventory/${id}`, data)
+
 export default api

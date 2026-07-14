@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { getCatalogProducts, getInventory, createInventory, updateInventory } from '../api/api'
 
 const STOCK_LEVELS = {
   none: { label: '🔴 Sin existencia', color: '#ef4444' },
@@ -26,17 +27,12 @@ export default function WarehouseDashboard({ user }) {
     setLoading(true)
     try {
       const [prodRes, invRes] = await Promise.all([
-        fetch('http://localhost:5000/api/catalog', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }}),
-        fetch('http://localhost:5000/api/inventory', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }})
+        getCatalogProducts(),
+        getInventory()
       ])
       
-      if (!prodRes.ok || !invRes.ok) throw new Error('Error fetching data')
-      
-      const prods = await prodRes.json()
-      const inv = await invRes.json()
-      
-      setProducts(prods)
-      setInventory(inv)
+      setProducts(prodRes.data)
+      setInventory(invRes.data)
     } catch (err) {
       console.error(err)
     } finally {
@@ -58,35 +54,21 @@ export default function WarehouseDashboard({ user }) {
     e.preventDefault()
     setSaving(true)
     try {
-      const url = editingItem.invItem 
-        ? `http://localhost:5000/api/inventory/${editingItem.invItem._id}`
-        : `http://localhost:5000/api/inventory`
-        
-      const method = editingItem.invItem ? 'PUT' : 'POST'
-      
       const body = {
         productId: editingItem.prod._id,
         ...form
       }
 
-      const res = await fetch(url, {
-        method,
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Error al guardar inventario')
+      if (editingItem.invItem) {
+        await updateInventory(editingItem.invItem._id, body)
+      } else {
+        await createInventory(body)
       }
       
       setEditingItem(null)
       fetchData()
     } catch (err) {
-      alert(err.message)
+      alert(err.response?.data?.error || err.message || 'Error al guardar')
     } finally {
       setSaving(false)
     }

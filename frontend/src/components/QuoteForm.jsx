@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { createQuote, searchCustomers, createCustomer, getCatalogProducts } from '../api/api'
+import { createQuote, searchCustomers, createCustomer, getCatalogProducts, getInventory } from '../api/api'
 import InvoiceView from './InvoiceView'
 
 const STOCK_LEVELS = {
@@ -44,12 +44,9 @@ export default function QuoteForm({ onQuoteCreated, user }) {
       const { data } = await getCatalogProducts()
       setCatalog(data)
       
-      const invRes = await fetch('http://localhost:5000/api/inventory', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      })
-      if (invRes.ok) {
-        const invData = await invRes.json()
-        setInventory(invData)
+      const invRes = await getInventory()
+      if (invRes.data) {
+        setInventory(invRes.data)
       }
     } catch (err) {
       console.error(err)
