@@ -31,37 +31,45 @@ export default function InvoiceView({ data, user, onNew }) {
     if (!element) return
 
     try {
-      // Create a canvas with high resolution
       const canvas = await html2canvas(element, { scale: 2, useCORS: true })
       
-      // Try to use Web Share API with files if supported (mobile primarily)
-      if (navigator.canShare && navigator.canShare({ files: [] })) {
-        canvas.toBlob(async (blob) => {
-          if (!blob) return;
-          const file = new File([blob], `Proforma_${data.code || 'DOC'}.png`, { type: 'image/png' })
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], `Proforma_${data.code || 'DOC'}.png`, { type: 'image/png' })
+        
+        // Use Web Share API if available
+        if (navigator.share) {
           try {
             await navigator.share({
               title: `Proforma ${data.code || 'DOC'}`,
-              text: `Aquí tienes la proforma ${data.code || 'DOC'} de ${user?.companyName || 'nuestra empresa'}.`,
+              text: `Adjunto proforma ${data.code || 'DOC'}`,
               files: [file]
             })
+            return; // Success
           } catch (shareErr) {
-            console.log('Error sharing or cancelled:', shareErr)
-            // Fallback if sharing was cancelled or failed but API was present: do nothing or fallback to download
+            console.log('Share failed or unsupported:', shareErr)
+            // Fallback to download if it's not a user cancellation
+            if (shareErr.name !== 'AbortError') {
+              fallbackDownload(canvas, data.code)
+            }
           }
-        }, 'image/png')
-      } else {
-        // Fallback for desktops or browsers that don't support file sharing: Download PNG
-        const imgData = canvas.toDataURL('image/png')
-        const link = document.createElement('a')
-        link.download = `Proforma_${data.code || 'DOC'}.png`
-        link.href = imgData
-        link.click()
-      }
+        } else {
+          // Fallback if no share API
+          fallbackDownload(canvas, data.code)
+        }
+      }, 'image/png')
     } catch (err) {
       console.error('Error generando Imagen', err)
       alert('Hubo un error al generar la imagen')
     }
+  }
+
+  const fallbackDownload = (canvas, code) => {
+    const imgData = canvas.toDataURL('image/png')
+    const link = document.createElement('a')
+    link.download = `Proforma_${code || 'DOC'}.png`
+    link.href = imgData
+    link.click()
   }
 
   const formatDate = (dateString) => {
