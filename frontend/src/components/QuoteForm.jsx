@@ -302,7 +302,7 @@ export default function QuoteForm({ onQuoteCreated, user }) {
               )}
             </div>
 
-            <div className="card" style={{ marginTop: '1.5rem' }}>
+            <div className="card" style={{ position: 'relative', zIndex: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 className="card-title" style={{ margin: 0 }}>📦 Productos</h2>
                 <button type="button" onClick={addItem} className="btn btn-secondary btn-sm">+ Agregar Producto</button>
@@ -366,7 +366,7 @@ export default function QuoteForm({ onQuoteCreated, user }) {
               </div>
             </div>
 
-            <div className="card" style={{ marginTop: '1.5rem', borderLeft: '4px solid #8b5cf6' }}>
+            <div className="card" style={{ marginTop: '1.5rem', borderLeft: '4px solid #8b5cf6', position: 'relative', zIndex: 5 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 className="card-title" style={{ margin: 0 }}>🛠️ Servicios</h2>
                 <button type="button" onClick={addService} className="btn btn-secondary btn-sm" style={{borderColor: '#8b5cf6', color: '#8b5cf6'}}>+ Agregar Servicio</button>

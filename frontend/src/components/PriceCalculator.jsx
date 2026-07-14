@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react'
-import { getCatalogProducts, searchCatalog, createCatalogProduct, updateCatalogProduct, deleteCatalogProduct } from '../api/api'
+import { getCatalogProducts, searchCatalog, createCatalogProduct, updateCatalogProduct, deleteCatalogProduct, getInventory } from '../api/api'
+
+const STOCK_LEVELS = {
+  none: { emoji: '🔴', label: 'Sin stock' },
+  low: { emoji: '🟠', label: 'Poco' },
+  medium: { emoji: '🟡', label: 'Medio' },
+  high: { emoji: '🟢', label: 'Mucho' },
+  full: { emoji: '🔵', label: 'Completo' }
+}
 
 // Tree builder helpers
 const buildVariantGroups = (products, level) => {
@@ -59,13 +67,16 @@ const buildProductTree = (products) => {
   return tree
 }
 
-const TreeNode = ({ node, level, selectProduct, editingId }) => {
+const TreeNode = ({ node, level, selectProduct, editingId, inventory }) => {
   const [expanded, setExpanded] = useState(false)
   const isCategory = node.type === 'category'
   const isGroup = node.type === 'group'
   
   if (node.type === 'product') {
     const p = node.data
+    const invItem = inventory.find(i => i.product?._id === p._id || i.product === p._id)
+    const stock = invItem ? STOCK_LEVELS[invItem.stockLevel] : STOCK_LEVELS['none']
+
     return (
       <div 
         onClick={() => selectProduct(p)}
@@ -80,6 +91,7 @@ const TreeNode = ({ node, level, selectProduct, editingId }) => {
       >
         <div>
           <strong style={{ fontSize: '0.9rem' }}>{p.name}</strong>
+          <span title={`Stock: ${stock.label}`} style={{ marginLeft: '8px' }}>{stock.emoji}</span>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
             {p.variants && p.variants.length > 0 && `(${p.variants.join(', ')})`}
           </div>
@@ -118,7 +130,7 @@ const TreeNode = ({ node, level, selectProduct, editingId }) => {
       {expanded && (
         <div>
           {node.children.map((child, idx) => (
-            <TreeNode key={idx} node={child} level={level + 1} selectProduct={selectProduct} editingId={editingId} />
+            <TreeNode key={idx} node={child} level={level + 1} selectProduct={selectProduct} editingId={editingId} inventory={inventory} />
           ))}
         </div>
       )}
@@ -130,6 +142,7 @@ export default function PriceCalculator({ user }) {
   // Access control removed: Feature is now available to all users
 
   const [products, setProducts] = useState([])
+  const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
 
@@ -156,8 +169,12 @@ export default function PriceCalculator({ user }) {
   const fetchProducts = async () => {
     setLoading(true)
     try {
-      const { data } = await getCatalogProducts()
-      setProducts(data)
+      const [prodRes, invRes] = await Promise.all([
+        getCatalogProducts(),
+        getInventory()
+      ])
+      setProducts(prodRes.data)
+      if (invRes.data) setInventory(invRes.data)
     } catch (err) {
       console.error(err)
     } finally {
@@ -291,7 +308,7 @@ export default function PriceCalculator({ user }) {
             {!loading && products.length === 0 && <p style={{color:'var(--text-muted)'}}>No hay productos registrados.</p>}
             
             {buildProductTree(products).map((node, idx) => (
-              <TreeNode key={idx} node={node} level={0} selectProduct={selectProduct} editingId={editingId} />
+              <TreeNode key={idx} node={node} level={0} selectProduct={selectProduct} editingId={editingId} inventory={inventory} />
             ))}
           </div>
         </div>
