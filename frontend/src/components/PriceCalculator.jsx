@@ -127,18 +127,7 @@ const TreeNode = ({ node, level, selectProduct, editingId }) => {
 }
 
 export default function PriceCalculator({ user }) {
-  // Access control
-  if (user?.role !== 'admin') {
-    return (
-      <div className="page-container">
-        <div className="empty-state" style={{ marginTop: '4rem' }}>
-          <div className="empty-icon">🚧</div>
-          <h3>Creación de funcionalidad en proceso</h3>
-          <p>Esta herramienta estará disponible próximamente para todos los facturadores.</p>
-        </div>
-      </div>
-    )
-  }
+  // Access control removed: Feature is now available to all users
 
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(false)
@@ -275,7 +264,7 @@ export default function PriceCalculator({ user }) {
   return (
     <div className="page-container" style={{ paddingBottom: '5rem' }}>
       <div className="page-header">
-        <h1 className="page-title">🧮 Calculadora de Precios (Admin)</h1>
+        <h1 className="page-title">🧮 Calculadora de Precios</h1>
         <p className="page-subtitle">Crea productos base y automatiza su cotización por área o unidad.</p>
       </div>
 
