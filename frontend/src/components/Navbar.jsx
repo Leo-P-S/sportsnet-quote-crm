@@ -10,7 +10,7 @@ export default function Navbar({ activeTab, setActiveTab, user, onLogout }) {
       { id: 'quote', label: 'Proforma', icon: '📄' },
       { id: 'history', label: 'Historial', icon: '📚' },
       { id: 'customers', label: 'Clientes', icon: '👤' },
-      { id: 'calculator', label: 'Calculadora', icon: '🧮' },
+      { id: 'calculator', label: 'Catálogo', icon: '🧮' },
       { id: 'team', label: 'Equipo', icon: '👥' },
       { id: 'profile', label: 'Perfil', icon: '⚙️' },
     ];

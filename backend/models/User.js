@@ -12,7 +12,10 @@ const UserSchema = new Schema({
   facturadorId: { type: Schema.Types.ObjectId, ref: 'User' },
   linkCode: { type: String, unique: true, sparse: true },
   status: { type: String, enum: ['pending', 'active', 'rejected'], default: 'pending' },
-  logoBase64: { type: String }, // Imagen en base64
+  logoBase64: { 
+    type: String,
+    match: [/^data:image\/(jpeg|png|webp|gif);base64,/, 'El formato de imagen no es válido o es peligroso.']
+  }, // Imagen en base64
   createdAt: { type: Date, default: Date.now }
 });
 
