@@ -22,6 +22,16 @@ export default function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'almacenador') {
+        setActiveTab('inventory')
+      } else {
+        setActiveTab('quote')
+      }
+    }
+  }, [user?.username]) // Solo ejecutar cuando el usuario cambie
+
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -36,13 +46,13 @@ export default function App() {
     <div className="app">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={handleLogout} />
       <main className="main-content">
-        {activeTab === 'quote' && (
+        {activeTab === 'quote' && user.role !== 'almacenador' && (
           <QuoteForm onQuoteCreated={(q) => setLastQuote(q)} user={user} />
         )}
-        {activeTab === 'history' && (
+        {activeTab === 'history' && user.role !== 'almacenador' && (
           <QuoteList user={user} />
         )}
-        {activeTab === 'customers' && (
+        {activeTab === 'customers' && user.role !== 'almacenador' && (
           <CustomerList />
         )}
         {activeTab === 'profile' && (
@@ -51,13 +61,13 @@ export default function App() {
         {activeTab === 'admin' && user.role === 'admin' && (
           <AdminPanel />
         )}
-        {activeTab === 'calculator' && (
+        {activeTab === 'calculator' && user.role !== 'almacenador' && (
           <PriceCalculator user={user} />
         )}
-        {activeTab === 'team' && (
+        {activeTab === 'team' && user.role !== 'almacenador' && (
           <TeamManager user={user} />
         )}
-        {activeTab === 'inventory' && (
+        {activeTab === 'inventory' && (user.role === 'almacenador' || user.role === 'admin') && (
           <WarehouseDashboard user={user} />
         )}
 

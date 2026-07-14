@@ -3,10 +3,11 @@ const router = express.Router();
 const CatalogProduct = require('../models/CatalogProduct');
 const { protect } = require('../middleware/auth');
 
-// GET /api/catalog - Get all products for logged in user
+// GET /api/catalog - Get all products for logged in user (or their facturador if they are an almacenador)
 router.get('/', protect, async (req, res, next) => {
   try {
-    const products = await CatalogProduct.find({ facturador: req.user._id }).sort({ name: 1 });
+    const ownerId = req.user.role === 'almacenador' ? req.user.facturadorId : req.user._id;
+    const products = await CatalogProduct.find({ facturador: ownerId }).sort({ name: 1 });
     res.json(products);
   } catch (err) {
     next(err);
@@ -22,8 +23,9 @@ router.get('/search', protect, async (req, res, next) => {
     const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(escapedQ, 'i');
     
+    const ownerId = req.user.role === 'almacenador' ? req.user.facturadorId : req.user._id;
     const products = await CatalogProduct.find({
-      facturador: req.user._id,
+      facturador: ownerId,
       $or: [
         { name: { $regex: regex } },
         { category: { $regex: regex } }
