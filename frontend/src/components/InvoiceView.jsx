@@ -26,6 +26,44 @@ export default function InvoiceView({ data, user, onNew }) {
     }
   }
 
+  const shareAsImage = async () => {
+    const element = invoiceRef.current
+    if (!element) return
+
+    try {
+      // Create a canvas with high resolution
+      const canvas = await html2canvas(element, { scale: 2, useCORS: true })
+      
+      // Try to use Web Share API with files if supported (mobile primarily)
+      if (navigator.canShare && navigator.canShare({ files: [] })) {
+        canvas.toBlob(async (blob) => {
+          if (!blob) return;
+          const file = new File([blob], `Proforma_${data.code || 'DOC'}.png`, { type: 'image/png' })
+          try {
+            await navigator.share({
+              title: `Proforma ${data.code || 'DOC'}`,
+              text: `Aquí tienes la proforma ${data.code || 'DOC'} de ${user?.companyName || 'nuestra empresa'}.`,
+              files: [file]
+            })
+          } catch (shareErr) {
+            console.log('Error sharing or cancelled:', shareErr)
+            // Fallback if sharing was cancelled or failed but API was present: do nothing or fallback to download
+          }
+        }, 'image/png')
+      } else {
+        // Fallback for desktops or browsers that don't support file sharing: Download PNG
+        const imgData = canvas.toDataURL('image/png')
+        const link = document.createElement('a')
+        link.download = `Proforma_${data.code || 'DOC'}.png`
+        link.href = imgData
+        link.click()
+      }
+    } catch (err) {
+      console.error('Error generando Imagen', err)
+      alert('Hubo un error al generar la imagen')
+    }
+  }
+
   const formatDate = (dateString) => {
     if (!dateString) return ''
     const d = new Date(dateString)
@@ -41,7 +79,10 @@ export default function InvoiceView({ data, user, onNew }) {
     <div className="invoice-preview-container">
       <div className="invoice-actions">
         <button onClick={onNew} className="btn btn-secondary">← Volver / Nueva Proforma</button>
-        <button onClick={downloadPDF} className="btn btn-primary">📄 Descargar PDF</button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={shareAsImage} className="btn" style={{ background: '#10b981', color: '#fff' }}>🖼️ Compartir Foto</button>
+          <button onClick={downloadPDF} className="btn btn-primary">📄 Descargar PDF</button>
+        </div>
       </div>
 
       <div className="invoice-paper" ref={invoiceRef}>

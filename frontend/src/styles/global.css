@@ -584,24 +584,29 @@ body {
 
 /* ── INVOICE PDF VIEW (A4 aspect, white background) ───────────────── */
 .invoice-preview-container {
-  max-width: 210mm;
+  max-width: 100%;
   margin: 0 auto;
+  overflow-x: auto;
+  padding-bottom: 2rem;
 }
 .invoice-actions {
   display: flex;
   justify-content: space-between;
   margin-bottom: 1rem;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .invoice-paper {
   background: white;
   color: #000; /* Black text for PDF */
   padding: 15mm;
-  width: 100%;
-  aspect-ratio: 1 / 1.414; /* A4 aspect ratio */
+  width: 210mm; /* Fixed A4 Width */
+  min-height: 297mm; /* Minimum A4 Height */
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   font-family: Arial, Helvetica, sans-serif; /* Standard font for PDF */
   position: relative;
   overflow: hidden;
+  margin: 0 auto;
 }
 
 .invoice-header {
