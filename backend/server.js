@@ -9,6 +9,9 @@ const connectDB = require('./config/db');
 
 const app = express();
 
+// Trust reverse proxy (e.g., Render, Heroku, Nginx) so rate limiter gets the correct IP
+app.set('trust proxy', 1);
+
 // Security middlewares
 app.use(helmet());
 app.use(cors(corsOptions));
