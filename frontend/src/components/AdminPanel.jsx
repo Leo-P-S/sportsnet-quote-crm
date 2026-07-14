@@ -107,34 +107,34 @@ export default function AdminPanel() {
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.95rem' }}>
               <thead>
-                <tr style={{borderBottom: '2px solid var(--border)'}}>
-                  <th style={{padding: '1rem'}}>Usuario</th>
-                  <th>Empresa</th>
-                  <th>RUC</th>
-                  <th>Dirección</th>
-                  <th>Logo</th>
-                  <th>Estado</th>
-                  <th style={{textAlign: 'right'}}>Acciones</th>
+                <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                  <th style={{ padding: '1rem' }}>Usuario</th>
+                  <th style={{ padding: '1rem' }}>Empresa</th>
+                  <th style={{ padding: '1rem' }}>RUC</th>
+                  <th style={{ padding: '1rem' }}>Dirección</th>
+                  <th style={{ padding: '1rem' }}>Logo</th>
+                  <th style={{ padding: '1rem' }}>Estado</th>
+                  <th style={{ padding: '1rem', textAlign: 'right' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map(u => (
-                  <tr key={u._id} style={{borderBottom: '1px solid var(--border)'}}>
-                    <td style={{padding: '1rem'}}>
+                  <tr key={u._id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td data-label="Usuario" style={{ padding: '1rem' }}>
                       <strong>{u.name}</strong><br/>
                       <small style={{color:'var(--text-secondary)'}}>@{u.username}</small>
                     </td>
-                    <td>{u.companyName || '-'}</td>
-                    <td>{u.ruc || '-'}</td>
-                    <td>{u.address || '-'}</td>
-                    <td>
+                    <td data-label="Empresa" style={{ padding: '1rem' }}>{u.companyName || '-'}</td>
+                    <td data-label="RUC" style={{ padding: '1rem' }}>{u.ruc || '-'}</td>
+                    <td data-label="Dirección" style={{ padding: '1rem' }}>{u.address || '-'}</td>
+                    <td data-label="Logo" style={{ padding: '1rem' }}>
                       {u.logoBase64 ? (
                         <img src={u.logoBase64} alt="Logo" style={{maxHeight:'40px', background:'#fff', padding:'2px', borderRadius:'4px'}} />
                       ) : '-'}
                     </td>
-                    <td>
+                    <td data-label="Estado" style={{ padding: '1rem' }}>
                       <select 
                         value={u.status} 
                         onChange={(e) => handleStatusChange(u._id, e.target.value)}

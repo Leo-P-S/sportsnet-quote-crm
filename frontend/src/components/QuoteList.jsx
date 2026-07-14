@@ -86,7 +86,7 @@ export default function QuoteList({ user }) {
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.95rem' }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.95rem' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)' }}>
                   <th style={{ padding: '1rem', cursor: 'pointer' }} onClick={() => handleSort('date')}>
@@ -105,15 +105,15 @@ export default function QuoteList({ user }) {
                   const custName = q.customer?.name || q.customerNameTemp || 'Desconocido';
                   return (
                     <tr key={q._id} style={{ borderBottom: '1px solid rgba(148,163,184,0.1)' }}>
-                      <td style={{ padding: '1rem' }}>{new Date(q.createdAt).toLocaleDateString('es-PE')}</td>
-                      <td style={{ padding: '1rem', fontWeight: 'bold' }}>{q.code || 'DOC'}</td>
-                      <td style={{ padding: '1rem' }}>{custName}</td>
-                      <td style={{ padding: '1rem', color: 'var(--accent)', fontWeight: 'bold' }}>S/ {q.total.toFixed(2)}</td>
-                      <td style={{ padding: '1rem', textAlign: 'right', minWidth: '150px' }}>
-                        <button className="btn btn-secondary btn-sm" style={{marginRight: '8px'}} onClick={() => setSelectedQuote(q)}>
+                      <td data-label="Fecha" style={{ padding: '1rem' }}>{new Date(q.createdAt).toLocaleDateString('es-PE')}</td>
+                      <td data-label="Código" style={{ padding: '1rem', fontWeight: 'bold' }}>{q.code || 'DOC'}</td>
+                      <td data-label="Cliente" style={{ padding: '1rem' }}>{custName}</td>
+                      <td data-label="Importe Total" style={{ padding: '1rem', color: 'var(--accent)', fontWeight: 'bold' }}>S/ {q.total.toFixed(2)}</td>
+                      <td data-label="Acciones" style={{ padding: '1rem', textAlign: 'right', minWidth: '150px' }}>
+                        <button className="btn btn-secondary btn-sm" style={{marginRight: '8px', marginBottom: '8px'}} onClick={() => setSelectedQuote(q)}>
                           Ver / Descargar
                         </button>
-                        <button className="btn btn-sm" style={{ background: 'var(--bg-card)', color: '#ef4444', border: '1px solid #ef4444' }} onClick={() => handleDelete(q._id)}>
+                        <button className="btn btn-sm" style={{ background: 'var(--bg-card)', color: '#ef4444', border: '1px solid #ef4444', marginBottom: '8px' }} onClick={() => handleDelete(q._id)}>
                           🗑️
                         </button>
                       </td>

@@ -148,7 +148,7 @@ export default function CustomerList({ user }) {
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.95rem' }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.95rem' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)' }}>
                   <th style={{ padding: '1rem' }}>Cliente</th>
@@ -160,8 +160,8 @@ export default function CustomerList({ user }) {
               </thead>
               <tbody>
                 {customers.map(c => (
-                  <tr key={c._id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '1rem' }}>
+                  <tr key={c._id} style={{ borderBottom: '1px solid rgba(148,163,184,0.1)' }}>
+                    <td data-label="Cliente" style={{ padding: '1rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div className="customer-avatar" style={{width: '32px', height: '32px', fontSize: '0.8rem'}}>
                           {c.name.substring(0, 2).toUpperCase()}
@@ -174,14 +174,14 @@ export default function CustomerList({ user }) {
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: '1rem' }}>{c.ruc || '-'}</td>
-                    <td style={{ padding: '1rem' }}>{c.contactInfo || '-'}</td>
-                    <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{c.address || '-'}</td>
-                    <td style={{ padding: '1rem', textAlign: 'right', minWidth: '220px' }}>
-                      <button className="btn btn-secondary btn-sm" style={{marginRight: '8px'}} onClick={() => openHistoryModal(c)}>
+                    <td data-label="RUC / DNI" style={{ padding: '1rem' }}>{c.ruc || '-'}</td>
+                    <td data-label="Contacto" style={{ padding: '1rem' }}>{c.contactInfo || '-'}</td>
+                    <td data-label="Dirección" style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{c.address || '-'}</td>
+                    <td data-label="Acciones" style={{ padding: '1rem', textAlign: 'right', minWidth: '220px' }}>
+                      <button className="btn btn-secondary btn-sm" style={{marginRight: '8px', marginBottom: '8px'}} onClick={() => openHistoryModal(c)}>
                         📚 Historial
                       </button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => openEditCustomerModal(c)}>
+                      <button className="btn btn-secondary btn-sm" style={{marginBottom: '8px'}} onClick={() => openEditCustomerModal(c)}>
                         ✏️ Editar
                       </button>
                     </td>
@@ -200,7 +200,7 @@ export default function CustomerList({ user }) {
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
-          <div className="card" style={{ width: '100%', maxWidth: '500px', margin: '20px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '500px', margin: '15px', maxHeight: '95vh', overflowY: 'auto' }}>
             <h2 className="card-title" style={{ marginBottom: '1.5rem' }}>
               {editingCustomer ? '✏️ Editar Cliente' : '👤 Registrar Cliente'}
             </h2>
@@ -231,9 +231,9 @@ export default function CustomerList({ user }) {
                 <input type="text" className="form-input" placeholder="Ej: Don Pepe, Ferreteria" value={formData.aliases} onChange={e => setFormData({...formData, aliases: e.target.value})} />
               </div>
 
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={closeModal}>Cancelar</button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>{editingCustomer ? 'Guardar Cambios' : 'Crear Cliente'}</button>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button type="button" className="btn btn-secondary" style={{ flex: '1 1 auto', minWidth: '120px' }} onClick={closeModal}>Cancelar</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: '1 1 auto', minWidth: '150px' }}>{editingCustomer ? 'Guardar Cambios' : 'Crear Cliente'}</button>
               </div>
             </form>
           </div>
@@ -245,11 +245,11 @@ export default function CustomerList({ user }) {
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '10px'
         }}>
-          <div className="card" style={{ width: '100%', maxWidth: '800px', margin: '20px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2 className="card-title" style={{ margin: 0 }}>📚 Historial de {historyCustomer.name}</h2>
+          <div className="card" style={{ width: '100%', maxWidth: '800px', margin: '0', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '10px' }}>
+              <h2 className="card-title" style={{ margin: 0, fontSize: '1.2rem' }}>📚 Historial de {historyCustomer.name}</h2>
               <button className="btn btn-secondary btn-sm" onClick={closeHistoryModal}>✕ Cerrar</button>
             </div>
 
@@ -263,7 +263,7 @@ export default function CustomerList({ user }) {
                   <p>Este cliente aún no tiene proformas registradas.</p>
                 </div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid var(--border)' }}>
                       <th style={{ padding: '0.8rem' }}>Fecha</th>
@@ -275,17 +275,17 @@ export default function CustomerList({ user }) {
                   <tbody>
                     {customerQuotes.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).map(q => (
                       <tr key={q._id} style={{ borderBottom: '1px solid rgba(148,163,184,0.1)' }}>
-                        <td style={{ padding: '0.8rem' }}>{new Date(q.createdAt).toLocaleDateString('es-PE')}</td>
-                        <td style={{ padding: '0.8rem', fontWeight: 'bold' }}>{q.code || '-'}</td>
-                        <td style={{ padding: '0.8rem', color: 'var(--accent)', fontWeight: 'bold' }}>S/ {q.total.toFixed(2)}</td>
-                        <td style={{ padding: '0.8rem', textAlign: 'right', minWidth: '180px' }}>
-                          <button className="btn btn-secondary btn-sm" style={{marginRight: '8px'}} onClick={() => {
+                        <td data-label="Fecha" style={{ padding: '0.8rem' }}>{new Date(q.createdAt).toLocaleDateString('es-PE')}</td>
+                        <td data-label="Código" style={{ padding: '0.8rem', fontWeight: 'bold' }}>{q.code || '-'}</td>
+                        <td data-label="Total" style={{ padding: '0.8rem', color: 'var(--accent)', fontWeight: 'bold' }}>S/ {q.total.toFixed(2)}</td>
+                        <td data-label="Acciones" style={{ padding: '0.8rem', textAlign: 'right', minWidth: '180px' }}>
+                          <button className="btn btn-secondary btn-sm" style={{marginRight: '8px', marginBottom: '8px'}} onClick={() => {
                             setSelectedQuote(q)
                             closeHistoryModal()
                           }}>
                             📄 Ver PDF
                           </button>
-                          <button className="btn btn-sm" style={{ background: 'var(--bg-card)', color: '#ef4444', border: '1px solid #ef4444' }} onClick={() => handleDeleteQuote(q._id)}>
+                          <button className="btn btn-sm" style={{ background: 'var(--bg-card)', color: '#ef4444', border: '1px solid #ef4444', marginBottom: '8px' }} onClick={() => handleDeleteQuote(q._id)}>
                             🗑️
                           </button>
                         </td>
