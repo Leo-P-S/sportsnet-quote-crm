@@ -14,6 +14,7 @@ api.interceptors.request.use((config) => {
 });
 
 export const login = (data) => api.post('/auth/login', data)
+export const registerUser = (data) => api.post('/auth/register', data)
 export const getMe = () => api.get('/auth/me')
 
 export const createQuote = (data) => api.post('/quote', data)

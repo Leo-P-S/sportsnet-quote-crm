@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { login as loginApi } from '../api/api'
-import axios from 'axios'
+import { login as loginApi, registerUser } from '../api/api'
 
 export default function Login({ onLogin }) {
   const [isRegistering, setIsRegistering] = useState(false)
@@ -35,8 +34,7 @@ export default function Login({ onLogin }) {
 
     try {
       if (isRegistering) {
-        // Use standard axios to avoid interceptor issues if any, but since it's unauthenticated it's fine
-        const { data } = await axios.post('/api/auth/register', { ...form, logoBase64 })
+        const { data } = await registerUser({ ...form, logoBase64 })
         setSuccess(data.message)
         setIsRegistering(false) // Switch back to login
       } else {
