@@ -6,6 +6,7 @@ import CustomerList from './components/CustomerList'
 import Login from './components/Login'
 import AdminPanel from './components/AdminPanel'
 import Profile from './components/Profile'
+import PriceCalculator from './components/PriceCalculator'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('quote')
@@ -47,6 +48,9 @@ export default function App() {
         )}
         {activeTab === 'admin' && user.role === 'admin' && (
           <AdminPanel />
+        )}
+        {activeTab === 'calculator' && (
+          <PriceCalculator user={user} />
         )}
 
         <div style={{ textAlign: 'center', marginTop: '3rem', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>

@@ -26,6 +26,13 @@ export const getCustomers = () => api.get('/crm')
 export const searchCustomers = (q) => api.get(`/crm/search?q=${encodeURIComponent(q)}`)
 export const updateCustomer = (id, data) => api.put(`/crm/${id}`, data)
 
+// Catalog (Products)
+export const getCatalogProducts = () => api.get('/catalog')
+export const searchCatalog = (q) => api.get(`/catalog/search?q=${encodeURIComponent(q)}`)
+export const createCatalogProduct = (data) => api.post('/catalog', data)
+export const updateCatalogProduct = (id, data) => api.put(`/catalog/${id}`, data)
+export const deleteCatalogProduct = (id) => api.delete(`/catalog/${id}`)
+
 export const updateProfile = (data) => api.put('/auth/me', data)
 
 // Admin routes

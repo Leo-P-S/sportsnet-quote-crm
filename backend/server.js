@@ -34,12 +34,14 @@ const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const quoteRoutes = require('./routes/quote');
 const crmRoutes = require('./routes/crm');
+const catalogRoutes = require('./routes/catalog');
 
 // Routes
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/quote', quoteRoutes);
 app.use('/api/crm', crmRoutes);
+app.use('/api/catalog', catalogRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK' }));
