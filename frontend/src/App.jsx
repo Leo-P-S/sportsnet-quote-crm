@@ -48,6 +48,10 @@ export default function App() {
         {activeTab === 'admin' && user.role === 'admin' && (
           <AdminPanel />
         )}
+
+        <div style={{ textAlign: 'center', marginTop: '3rem', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+          SportNet CRM v1.1.0
+        </div>
       </main>
     </div>
   )
