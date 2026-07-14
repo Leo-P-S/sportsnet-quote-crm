@@ -42,7 +42,9 @@ router.get('/search', protect, async (req, res, next) => {
     const { q } = req.query;
     if (!q) return res.json([]);
 
-    const regex = new RegExp(q, 'i');
+    // Escape regex special characters to prevent ReDoS
+    const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escapedQ, 'i');
     const customers = await Customer.find({
       facturador: req.user._id,
       $or: [

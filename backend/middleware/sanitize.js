@@ -34,5 +34,8 @@ module.exports = (req, res, next) => {
   if (req.params && typeof req.params === 'object') {
     req.params = sanitizeObject(req.params);
   }
+  if (req.query && typeof req.query === 'object') {
+    req.query = sanitizeObject(req.query);
+  }
   next();
 };

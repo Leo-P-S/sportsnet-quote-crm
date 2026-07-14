@@ -50,7 +50,7 @@ export default function App() {
         )}
 
         <div style={{ textAlign: 'center', marginTop: '3rem', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-          SportNet CRM v1.1.0
+          SportNet CRM v1.2.0
         </div>
       </main>
     </div>

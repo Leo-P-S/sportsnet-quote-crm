@@ -12,8 +12,19 @@ const app = express();
 // Security middlewares
 app.use(helmet());
 app.use(cors(corsOptions));
-app.use(express.json());
+// Limit body payload to 2mb to prevent DoS via large Base64 images
+app.use(express.json({ limit: '2mb' }));
 app.use(sanitize);
+
+// Rate limiting configuration
+const rateLimit = require('express-rate-limit');
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 requests per windowMs
+  message: { error: 'Demasiados intentos desde esta IP, por favor intenta de nuevo más tarde.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Connect to MongoDB
 connectDB();
@@ -25,7 +36,7 @@ const quoteRoutes = require('./routes/quote');
 const crmRoutes = require('./routes/crm');
 
 // Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/quote', quoteRoutes);
 app.use('/api/crm', crmRoutes);
