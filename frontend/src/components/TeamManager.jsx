@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { apiCall } from '../api/api' // using raw api logic since we don't have wrappers for everything
 
 export default function TeamManager({ user }) {
   const [team, setTeam] = useState([])
