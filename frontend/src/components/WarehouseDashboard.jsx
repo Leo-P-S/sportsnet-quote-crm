@@ -101,7 +101,7 @@ export default function WarehouseDashboard({ user }) {
         <p className="page-subtitle">Actualiza las ubicaciones y el nivel de stock para informar a ventas.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: editingItem ? '1fr 1fr' : '1fr', gap: '1.5rem', transition: 'all 0.3s' }}>
+      <div className={editingItem ? 'responsive-grid-2' : ''} style={{ display: 'grid', gridTemplateColumns: !editingItem ? '1fr' : undefined, gap: '1.5rem', transition: 'all 0.3s' }}>
         
         {/* Left: Product List */}
         <div className="card">

@@ -62,7 +62,7 @@ export default function TeamManager({ user }) {
         <p className="page-subtitle">Vincula a tus almacenadores para que puedan gestionar tu inventario.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
         
         <div className="card">
           <h2 className="card-title">Vincular Nuevo Almacenador</h2>
@@ -70,7 +70,7 @@ export default function TeamManager({ user }) {
             El almacenador debe crear su cuenta y dictarte su <strong>Código de Vinculación</strong>. Ingrésalo aquí para darle acceso a tu catálogo.
           </p>
           
-          <form onSubmit={handleLink} style={{ display: 'flex', gap: '10px' }}>
+          <form onSubmit={handleLink} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <input 
               type="text" 
               className="form-input" 

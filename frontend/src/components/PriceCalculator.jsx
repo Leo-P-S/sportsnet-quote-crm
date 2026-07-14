@@ -285,7 +285,7 @@ export default function PriceCalculator({ user }) {
         <p className="page-subtitle">Crea productos base y automatiza su cotización por área o unidad.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
         
         {/* Left Column: Product Search & List */}
         <div className="card">
@@ -377,7 +377,7 @@ export default function PriceCalculator({ user }) {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div className="btn-stack-mobile" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <button type="submit" className="btn btn-primary" style={{ flex: 1, minWidth: '150px' }} disabled={loading}>
                 {loading ? 'Guardando...' : '💾 Guardar'}
               </button>

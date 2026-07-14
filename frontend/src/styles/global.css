@@ -174,8 +174,16 @@ body {
   gap: 1.5rem;
 }
 
+.responsive-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  transition: all 0.3s;
+}
+
 @media (min-width: 800px) {
   .card-grid { grid-template-columns: 1fr 1fr; }
+  .responsive-grid-2 { grid-template-columns: 1fr 1fr; }
 }
 
 .card-title {
@@ -745,9 +753,20 @@ body {
   .page-title { font-size: 1.5rem; margin-bottom: 0.2rem; }
   .form-grid { grid-template-columns: 1fr; }
   
+  .card { padding: 1rem; }
+
   /* Touch targets for inputs and buttons */
-  .form-input { padding: 1rem; font-size: 1rem; }
-  .btn { padding: 1rem 1.6rem; font-size: 1rem; }
+  .form-input { padding: 0.85rem; font-size: 1rem; }
+  .btn { padding: 0.85rem 1.2rem; font-size: 1rem; }
+
+  /* Stack buttons */
+  .btn-stack-mobile {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.8rem !important;
+    width: 100%;
+  }
+  .btn-stack-mobile .btn { width: 100%; }
   
   /* Quote Form */
   .item-row { 
