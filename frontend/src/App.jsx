@@ -7,6 +7,8 @@ import Login from './components/Login'
 import AdminPanel from './components/AdminPanel'
 import Profile from './components/Profile'
 import PriceCalculator from './components/PriceCalculator'
+import TeamManager from './components/TeamManager'
+import WarehouseDashboard from './components/WarehouseDashboard'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('quote')
@@ -51,6 +53,12 @@ export default function App() {
         )}
         {activeTab === 'calculator' && (
           <PriceCalculator user={user} />
+        )}
+        {activeTab === 'team' && (
+          <TeamManager user={user} />
+        )}
+        {activeTab === 'inventory' && (
+          <WarehouseDashboard user={user} />
         )}
 
         <div style={{ textAlign: 'center', marginTop: '3rem', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>

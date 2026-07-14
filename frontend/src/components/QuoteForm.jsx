@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react'
 import { createQuote, searchCustomers, createCustomer, getCatalogProducts } from '../api/api'
 import InvoiceView from './InvoiceView'
 
+const STOCK_LEVELS = {
+  none: { emoji: '🔴', label: 'Sin stock' },
+  low: { emoji: '🟠', label: 'Poco' },
+  medium: { emoji: '🟡', label: 'Medio' },
+  high: { emoji: '🟢', label: 'Mucho' },
+  full: { emoji: '🔵', label: 'Completo' }
+}
+
 export default function QuoteForm({ onQuoteCreated, user }) {
   const [customerSearch, setCustomerSearch] = useState('')
   const [customer, setCustomer] = useState(null)
@@ -24,6 +32,7 @@ export default function QuoteForm({ onQuoteCreated, user }) {
 
   // Catalog logic
   const [catalog, setCatalog] = useState([])
+  const [inventory, setInventory] = useState([])
   const [focusedItemIndex, setFocusedItemIndex] = useState(null) // For autocomplete dropdown
 
   useEffect(() => {
@@ -34,6 +43,14 @@ export default function QuoteForm({ onQuoteCreated, user }) {
     try {
       const { data } = await getCatalogProducts()
       setCatalog(data)
+      
+      const invRes = await fetch('http://localhost:5000/api/inventory', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      })
+      if (invRes.ok) {
+        const invData = await invRes.json()
+        setInventory(invData)
+      }
     } catch (err) {
       console.error(err)
     }
@@ -329,11 +346,16 @@ export default function QuoteForm({ onQuoteCreated, user }) {
                         />
                         {suggestions.length > 0 && (
                           <div className="autocomplete-dropdown" style={{ zIndex: 100 }}>
-                            {suggestions.map(prod => (
-                              <div key={prod._id} className="autocomplete-item" onClick={() => selectUniversalProduct(index, prod._id)}>
-                                <strong>{prod.name}</strong>
-                              </div>
-                            ))}
+                            {suggestions.map(prod => {
+                              const invItem = inventory.find(i => i.product?._id === prod._id || i.product === prod._id)
+                              const stock = invItem ? STOCK_LEVELS[invItem.stockLevel] : STOCK_LEVELS['none']
+                              return (
+                                <div key={prod._id} className="autocomplete-item" onClick={() => selectUniversalProduct(index, prod._id)} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <strong>{prod.name}</strong>
+                                  <span title={`Stock: ${stock.label}`}>{stock.emoji}</span>
+                                </div>
+                              )
+                            })}
                           </div>
                         )}
                       </div>

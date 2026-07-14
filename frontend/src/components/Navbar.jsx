@@ -1,11 +1,20 @@
 export default function Navbar({ activeTab, setActiveTab, user, onLogout }) {
-  const tabs = [
-    { id: 'quote', label: 'Proforma', icon: '📄' },
-    { id: 'history', label: 'Historial', icon: '📚' },
-    { id: 'customers', label: 'Clientes', icon: '👤' },
-    { id: 'calculator', label: 'Calculadora', icon: '🧮' },
-    { id: 'profile', label: 'Perfil', icon: '⚙️' },
-  ]
+  let tabs = [];
+  if (user?.role === 'almacenador') {
+    tabs = [
+      { id: 'inventory', label: 'Inventario', icon: '📦' },
+      { id: 'profile', label: 'Perfil', icon: '⚙️' },
+    ];
+  } else {
+    tabs = [
+      { id: 'quote', label: 'Proforma', icon: '📄' },
+      { id: 'history', label: 'Historial', icon: '📚' },
+      { id: 'customers', label: 'Clientes', icon: '👤' },
+      { id: 'calculator', label: 'Calculadora', icon: '🧮' },
+      { id: 'team', label: 'Equipo', icon: '👥' },
+      { id: 'profile', label: 'Perfil', icon: '⚙️' },
+    ];
+  }
 
   if (user?.role === 'admin') {
     tabs.push({ id: 'admin', label: 'Admin', icon: '🛡️' })
@@ -22,7 +31,9 @@ export default function Navbar({ activeTab, setActiveTab, user, onLogout }) {
         {user && (
           <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
             <div style={{textAlign:'right'}} className="desktop-only">
-              <div style={{fontSize:'0.8rem', color:'var(--text-secondary)'}}>Facturador</div>
+              <div style={{fontSize:'0.8rem', color:'var(--text-secondary)'}}>
+                {user.role === 'admin' ? 'Administrador' : user.role === 'almacenador' ? 'Almacenador' : 'Facturador'}
+              </div>
               <div style={{fontSize:'0.9rem', fontWeight:'600'}}>{user.username}</div>
             </div>
             <button onClick={onLogout} className="btn btn-secondary btn-sm" style={{padding:'0.4rem 0.8rem', fontSize:'0.8rem', borderRadius: '8px'}}>Salir</button>

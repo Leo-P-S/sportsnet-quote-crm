@@ -8,7 +8,9 @@ const UserSchema = new Schema({
   companyName: { type: String },
   ruc: { type: String },
   address: { type: String },
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  role: { type: String, enum: ['user', 'facturador', 'almacenador', 'admin'], default: 'facturador' },
+  facturadorId: { type: Schema.Types.ObjectId, ref: 'User' },
+  linkCode: { type: String, unique: true, sparse: true },
   status: { type: String, enum: ['pending', 'active', 'rejected'], default: 'pending' },
   logoBase64: { type: String }, // Imagen en base64
   createdAt: { type: Date, default: Date.now }

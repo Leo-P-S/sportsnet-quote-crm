@@ -4,7 +4,7 @@ import { login as loginApi, registerUser } from '../api/api'
 export default function Login({ onLogin }) {
   const [isRegistering, setIsRegistering] = useState(false)
   const [form, setForm] = useState({
-    username: '', password: '', name: '', companyName: '', ruc: '', address: ''
+    username: '', password: '', name: '', companyName: '', ruc: '', address: '', role: 'facturador'
   })
   const [logoBase64, setLogoBase64] = useState('')
   const [error, setError] = useState('')
@@ -79,22 +79,38 @@ export default function Login({ onLogin }) {
                 <input name="name" type="text" className="form-input" value={form.name} onChange={handleChange} required />
               </div>
               <div className="form-group" style={{marginBottom:'1rem'}}>
-                <label className="form-label">Nombre de tu Empresa / Razón Social</label>
-                <input name="companyName" type="text" className="form-input" value={form.companyName} onChange={handleChange} />
+                <label className="form-label">¿Qué rol tendrás en la empresa? *</label>
+                <select name="role" className="form-input" value={form.role} onChange={handleChange} required>
+                  <option value="facturador">Facturador / Vendedor (Crea Proformas)</option>
+                  <option value="almacenador">Almacenador (Registra Inventario)</option>
+                </select>
               </div>
-              <div className="form-group" style={{marginBottom:'1rem'}}>
-                <label className="form-label">RUC</label>
-                <input name="ruc" type="text" className="form-input" value={form.ruc} onChange={handleChange} />
-              </div>
-              <div className="form-group" style={{marginBottom:'1rem'}}>
-                <label className="form-label">Dirección Fiscal</label>
-                <input name="address" type="text" className="form-input" value={form.address} onChange={handleChange} />
-              </div>
-              <div className="form-group" style={{marginBottom:'1rem'}}>
-                <label className="form-label">Logo de la Empresa (Opcional)</label>
-                <input type="file" accept="image/*" className="form-input" style={{padding:'0.4rem'}} onChange={handleFileChange} />
-                {logoBase64 && <img src={logoBase64} alt="Preview" style={{marginTop:'0.5rem', maxHeight:'60px', objectFit:'contain', background:'#fff', padding:'5px', borderRadius:'4px'}} />}
-              </div>
+              {form.role === 'facturador' && (
+                <>
+                  <div className="form-group" style={{marginBottom:'1rem'}}>
+                    <label className="form-label">Nombre de tu Empresa / Razón Social</label>
+                    <input name="companyName" type="text" className="form-input" value={form.companyName} onChange={handleChange} />
+                  </div>
+                  <div className="form-group" style={{marginBottom:'1rem'}}>
+                    <label className="form-label">RUC</label>
+                    <input name="ruc" type="text" className="form-input" value={form.ruc} onChange={handleChange} />
+                  </div>
+                  <div className="form-group" style={{marginBottom:'1rem'}}>
+                    <label className="form-label">Dirección Fiscal</label>
+                    <input name="address" type="text" className="form-input" value={form.address} onChange={handleChange} />
+                  </div>
+                  <div className="form-group" style={{marginBottom:'1rem'}}>
+                    <label className="form-label">Logo de la Empresa (Opcional)</label>
+                    <input type="file" accept="image/*" className="form-input" style={{padding:'0.4rem'}} onChange={handleFileChange} />
+                    {logoBase64 && <img src={logoBase64} alt="Preview" style={{marginTop:'0.5rem', maxHeight:'60px', objectFit:'contain', background:'#fff', padding:'5px', borderRadius:'4px'}} />}
+                  </div>
+                </>
+              )}
+              {form.role === 'almacenador' && (
+                <div style={{ padding: '0.5rem', background: 'rgba(255,200,0,0.1)', color: '#fbbf24', borderRadius: '4px', fontSize: '0.85rem', marginBottom: '1rem', border: '1px solid #fbbf24' }}>
+                  Nota: Al registrarte como almacenador, un facturador deberá vincularte a su equipo para que puedas acceder al inventario.
+                </div>
+              )}
             </>
           )}
 
