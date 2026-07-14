@@ -110,6 +110,25 @@ export default function PriceCalculator({ user }) {
     }
   }
 
+  const handleSaveAsNew = async () => {
+    if (!form.name || !form.category || form.basePrice < 0) {
+      alert('Por favor completa todos los campos requeridos (*)');
+      return;
+    }
+    setLoading(true)
+    try {
+      // Intentar crear un nuevo producto con los mismos datos
+      const { data } = await createCatalogProduct(form)
+      setEditingId(data._id)
+      alert('Producto guardado como copia nueva')
+      fetchProducts()
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error al guardar el nuevo producto (¿Tal vez el nombre ya existe?)')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleDelete = async (id) => {
     if (!window.confirm('¿Seguro que deseas eliminar este producto del catálogo?')) return;
     try {
@@ -228,14 +247,19 @@ export default function PriceCalculator({ user }) {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loading}>
-                {loading ? 'Guardando...' : '💾 Guardar en Catálogo'}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button type="submit" className="btn btn-primary" style={{ flex: 1, minWidth: '150px' }} disabled={loading}>
+                {loading ? 'Guardando...' : '💾 Guardar'}
               </button>
               {editingId && (
-                <button type="button" onClick={() => handleDelete(editingId)} className="btn btn-secondary" style={{ color: '#ef4444', borderColor: '#ef4444' }}>
-                  🗑️
-                </button>
+                <>
+                  <button type="button" onClick={handleSaveAsNew} className="btn btn-secondary" style={{ flex: 1, minWidth: '150px' }} disabled={loading}>
+                    📝 Guardar como Copia
+                  </button>
+                  <button type="button" onClick={() => handleDelete(editingId)} className="btn btn-secondary" style={{ color: '#ef4444', borderColor: '#ef4444', flexShrink: 0 }}>
+                    🗑️
+                  </button>
+                </>
               )}
             </div>
           </form>

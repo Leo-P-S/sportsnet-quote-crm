@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { createQuote, searchCustomers, createCustomer } from '../api/api'
+import { useState, useEffect } from 'react'
+import { createQuote, searchCustomers, createCustomer, getCatalogProducts } from '../api/api'
 import InvoiceView from './InvoiceView'
 
 export default function QuoteForm({ onQuoteCreated, user }) {
@@ -21,6 +21,26 @@ export default function QuoteForm({ onQuoteCreated, user }) {
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Catalog logic
+  const [catalog, setCatalog] = useState([])
+  const [catalogCategories, setCatalogCategories] = useState([])
+  const [focusedItemIndex, setFocusedItemIndex] = useState(null) // For autocomplete dropdown
+
+  useEffect(() => {
+    fetchCatalog()
+  }, [])
+
+  const fetchCatalog = async () => {
+    try {
+      const { data } = await getCatalogProducts()
+      setCatalog(data)
+      const uniqueCats = [...new Set(data.map(p => p.category))]
+      setCatalogCategories(uniqueCats)
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   // Autocomplete logic
   const handleSearch = async (val) => {
@@ -45,12 +65,61 @@ export default function QuoteForm({ onQuoteCreated, user }) {
   }
 
   // Items logic
-  const addItem = () => setItems([...items, { quantity: 1, unit: 'UNIDAD', description: '', unitPrice: 0 }])
+  const addItem = () => setItems([...items, { quantity: 1, unit: 'UNIDAD', description: '', unitPrice: 0, _categorySelected: null }])
+  
   const updateItem = (index, field, value) => {
     const newItems = [...items]
     newItems[index][field] = value
+    
+    // Auto-detect category match when typing
+    if (field === 'description') {
+      const matchedCategory = catalogCategories.find(c => c.toLowerCase() === value.toLowerCase())
+      if (matchedCategory) {
+        selectCatalogCategory(index, matchedCategory, newItems)
+      } else {
+        newItems[index]._categorySelected = null
+        newItems[index]._subcatSelected = ''
+      }
+    }
+    
     setItems(newItems)
   }
+
+  const selectCatalogCategory = (index, categoryName, itemsArray = items) => {
+    const newItems = [...itemsArray]
+    newItems[index].description = categoryName
+    newItems[index]._categorySelected = categoryName
+    newItems[index]._subcatSelected = ''
+    
+    // Check if this category has products with subcategories
+    const categoryProducts = catalog.filter(p => p.category === categoryName)
+    const hasSubcats = categoryProducts.some(p => p.subcategory)
+    
+    if (!hasSubcats && categoryProducts.length > 0) {
+      // Single product category (no subcats)
+      const prod = categoryProducts[0]
+      newItems[index].unitPrice = prod.basePrice
+      newItems[index].unit = prod.calcMode === 'area' ? 'M2' : 'UNIDAD'
+    }
+    
+    setItems(newItems)
+    setFocusedItemIndex(null)
+  }
+
+  const selectSubcategory = (index, subcategoryName) => {
+    const newItems = [...items]
+    const catName = newItems[index]._categorySelected
+    newItems[index]._subcatSelected = subcategoryName
+    
+    const prod = catalog.find(p => p.category === catName && p.subcategory === subcategoryName)
+    if (prod) {
+      newItems[index].unitPrice = prod.basePrice
+      newItems[index].unit = prod.calcMode === 'area' ? 'M2' : 'UNIDAD'
+    }
+    
+    setItems(newItems)
+  }
+
   const removeItem = (index) => setItems(items.filter((_, i) => i !== index))
 
   // Services logic
@@ -118,10 +187,17 @@ export default function QuoteForm({ onQuoteCreated, user }) {
         setCustomer(createdCust)
       }
 
-      const processedItems = allEntries.map(i => ({
-        ...i,
-        totalPrice: i.quantity * i.unitPrice
-      }))
+      const processedItems = allEntries.map(i => {
+        // Append subcategory to description if selected
+        const finalDesc = i._subcatSelected ? `${i.description} - ${i._subcatSelected}` : i.description
+        return {
+          quantity: i.quantity,
+          unit: i.unit,
+          description: finalDesc,
+          unitPrice: i.unitPrice,
+          totalPrice: i.quantity * i.unitPrice
+        }
+      })
 
       const payload = {
         customer: activeCustomerId,
@@ -260,21 +336,67 @@ export default function QuoteForm({ onQuoteCreated, user }) {
 
               <div className="items-list">
                 {items.length === 0 && <p style={{color:'var(--text-muted)', fontSize:'0.9rem'}}>No hay productos.</p>}
-                {items.map((item, index) => (
-                  <div key={index} className="item-row">
-                    <input type="number" step="0.01" className="form-input" placeholder="Cant." style={{ width: '80px', flexShrink: 0 }} value={item.quantity} onChange={e => updateItem(index, 'quantity', parseFloat(e.target.value))} required />
-                    <select className="form-input" style={{ width: '130px', flexShrink: 0 }} value={item.unit} onChange={e => updateItem(index, 'unit', e.target.value)}>
-                      <option>UNIDAD</option>
-                      <option>METROS</option>
-                      <option>ROLLO</option>
-                      <option>M2</option>
-                    </select>
-                    <input type="text" className="form-input" placeholder="Descripción del producto" style={{ flex: 1, minWidth: '150px' }} value={item.description} onChange={e => updateItem(index, 'description', e.target.value)} required />
-                    <input type="number" step="0.01" className="form-input" placeholder="Precio Unit." style={{ width: '110px', flexShrink: 0 }} value={item.unitPrice} onChange={e => updateItem(index, 'unitPrice', parseFloat(e.target.value))} required />
-                    <div className="item-total" style={{ width: '90px', flexShrink: 0 }}>S/ {(item.quantity * item.unitPrice).toFixed(2)}</div>
-                    <button type="button" className="btn-remove" style={{ flexShrink: 0 }} onClick={() => removeItem(index)}>✕</button>
-                  </div>
-                ))}
+                {items.map((item, index) => {
+                  const categoryProducts = item._categorySelected ? catalog.filter(p => p.category === item._categorySelected && p.subcategory) : []
+                  const showSubcatDropdown = categoryProducts.length > 0
+                  
+                  const suggestions = focusedItemIndex === index && item.description.length > 0 
+                    ? catalogCategories.filter(c => c.toLowerCase().includes(item.description.toLowerCase()) && c.toLowerCase() !== item.description.toLowerCase())
+                    : []
+
+                  return (
+                    <div key={index} className="item-row" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                      <input type="number" step="0.01" className="form-input" placeholder="Cant." style={{ width: '80px', flexShrink: 0 }} value={item.quantity} onChange={e => updateItem(index, 'quantity', parseFloat(e.target.value))} required />
+                      <select className="form-input" style={{ width: '130px', flexShrink: 0 }} value={item.unit} onChange={e => updateItem(index, 'unit', e.target.value)}>
+                        <option>UNIDAD</option>
+                        <option>METROS</option>
+                        <option>ROLLO</option>
+                        <option>M2</option>
+                      </select>
+                      
+                      <div className="autocomplete-wrapper" style={{ flex: 1, minWidth: '150px' }}>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Descripción del producto o categoría" 
+                          value={item.description} 
+                          onChange={e => updateItem(index, 'description', e.target.value)} 
+                          onFocus={() => setFocusedItemIndex(index)}
+                          onBlur={() => setTimeout(() => setFocusedItemIndex(null), 200)}
+                          required 
+                        />
+                        {suggestions.length > 0 && (
+                          <div className="autocomplete-dropdown" style={{ zIndex: 100 }}>
+                            {suggestions.map(cat => (
+                              <div key={cat} className="autocomplete-item" onClick={() => selectCatalogCategory(index, cat)}>
+                                <strong>{cat}</strong> (Catálogo)
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {showSubcatDropdown && (
+                        <select 
+                          className="form-input" 
+                          style={{ flex: 1, minWidth: '150px', backgroundColor: 'var(--bg-input)' }} 
+                          value={item._subcatSelected || ''}
+                          onChange={e => selectSubcategory(index, e.target.value)}
+                          required
+                        >
+                          <option value="" disabled>Selecciona subcategoría...</option>
+                          {categoryProducts.map(p => (
+                            <option key={p._id} value={p.subcategory}>{p.subcategory}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      <input type="number" step="0.01" className="form-input" placeholder="Precio Unit." style={{ width: '110px', flexShrink: 0 }} value={item.unitPrice} onChange={e => updateItem(index, 'unitPrice', parseFloat(e.target.value))} required />
+                      <div className="item-total" style={{ width: '90px', flexShrink: 0, marginTop: '10px' }}>S/ {(item.quantity * item.unitPrice).toFixed(2)}</div>
+                      <button type="button" className="btn-remove" style={{ flexShrink: 0, marginTop: '5px' }} onClick={() => removeItem(index)}>✕</button>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
