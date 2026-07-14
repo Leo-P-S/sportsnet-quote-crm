@@ -78,7 +78,7 @@ export default function QuoteForm({ onQuoteCreated, user }) {
         selectCatalogCategory(index, matchedCategory, newItems)
       } else {
         newItems[index]._categorySelected = null
-        newItems[index]._subcatSelected = ''
+        newItems[index]._variantProductSelected = ''
       }
     }
     
@@ -89,15 +89,16 @@ export default function QuoteForm({ onQuoteCreated, user }) {
     const newItems = [...itemsArray]
     newItems[index].description = categoryName
     newItems[index]._categorySelected = categoryName
-    newItems[index]._subcatSelected = ''
+    newItems[index]._variantProductSelected = ''
     
-    // Check if this category has products with subcategories
+    // Check if this category has products with variants
     const categoryProducts = catalog.filter(p => p.category === categoryName)
-    const hasSubcats = categoryProducts.some(p => p.subcategory)
+    const hasVariants = categoryProducts.some(p => p.variants && p.variants.length > 0)
     
-    if (!hasSubcats && categoryProducts.length > 0) {
-      // Single product category (no subcats)
+    if (!hasVariants && categoryProducts.length === 1) {
+      // Single product category (no variants)
       const prod = categoryProducts[0]
+      newItems[index].description = prod.name
       newItems[index].unitPrice = prod.basePrice
       newItems[index].unit = prod.calcMode === 'area' ? 'M2' : 'UNIDAD'
     }
@@ -106,13 +107,12 @@ export default function QuoteForm({ onQuoteCreated, user }) {
     setFocusedItemIndex(null)
   }
 
-  const selectSubcategory = (index, subcategoryName) => {
+  const selectVariantProduct = (index, productId) => {
     const newItems = [...items]
-    const catName = newItems[index]._categorySelected
-    newItems[index]._subcatSelected = subcategoryName
-    
-    const prod = catalog.find(p => p.category === catName && p.subcategory === subcategoryName)
+    const prod = catalog.find(p => p._id === productId)
     if (prod) {
+      newItems[index]._variantProductSelected = productId
+      newItems[index].description = prod.name
       newItems[index].unitPrice = prod.basePrice
       newItems[index].unit = prod.calcMode === 'area' ? 'M2' : 'UNIDAD'
     }
@@ -188,12 +188,10 @@ export default function QuoteForm({ onQuoteCreated, user }) {
       }
 
       const processedItems = allEntries.map(i => {
-        // Append subcategory to description if selected
-        const finalDesc = i._subcatSelected ? `${i.description} - ${i._subcatSelected}` : i.description
         return {
           quantity: i.quantity,
           unit: i.unit,
-          description: finalDesc,
+          description: i.description,
           unitPrice: i.unitPrice,
           totalPrice: i.quantity * i.unitPrice
         }
@@ -337,8 +335,8 @@ export default function QuoteForm({ onQuoteCreated, user }) {
               <div className="items-list">
                 {items.length === 0 && <p style={{color:'var(--text-muted)', fontSize:'0.9rem'}}>No hay productos.</p>}
                 {items.map((item, index) => {
-                  const categoryProducts = item._categorySelected ? catalog.filter(p => p.category === item._categorySelected && p.subcategory) : []
-                  const showSubcatDropdown = categoryProducts.length > 0
+                  const categoryProducts = item._categorySelected ? catalog.filter(p => p.category === item._categorySelected) : []
+                  const showVariantDropdown = categoryProducts.length > 1 || (categoryProducts.length === 1 && categoryProducts[0].variants && categoryProducts[0].variants.length > 0)
                   
                   const suggestions = focusedItemIndex === index && item.description.length > 0 
                     ? catalogCategories.filter(c => c.toLowerCase().includes(item.description.toLowerCase()) && c.toLowerCase() !== item.description.toLowerCase())
@@ -376,17 +374,17 @@ export default function QuoteForm({ onQuoteCreated, user }) {
                         )}
                       </div>
 
-                      {showSubcatDropdown && (
+                      {showVariantDropdown && (
                         <select 
                           className="form-input" 
                           style={{ flex: 1, minWidth: '150px', backgroundColor: 'var(--bg-input)' }} 
-                          value={item._subcatSelected || ''}
-                          onChange={e => selectSubcategory(index, e.target.value)}
+                          value={item._variantProductSelected || ''}
+                          onChange={e => selectVariantProduct(index, e.target.value)}
                           required
                         >
-                          <option value="" disabled>Selecciona subcategoría...</option>
+                          <option value="" disabled>Selecciona variante...</option>
                           {categoryProducts.map(p => (
-                            <option key={p._id} value={p.subcategory}>{p.subcategory}</option>
+                            <option key={p._id} value={p._id}>{p.variants?.join(' ') || 'Base'}</option>
                           ))}
                         </select>
                       )}

@@ -3,7 +3,7 @@ const { Schema, model } = require('mongoose');
 const CatalogProductSchema = new Schema({
   name: { type: String, required: true },
   category: { type: String, required: true }, // e.g., 'malla', 'colchoneta'
-  subcategory: { type: String }, // e.g., 'N 36'
+  variants: [{ type: String }], // Array of strings like ['negra', 'n 72']
   calcMode: { type: String, enum: ['area', 'unit'], default: 'unit', required: true },
   basePrice: { type: Number, required: true }, // Price per unit or per m2
   facturador: { type: Schema.Types.ObjectId, ref: 'User', required: true },

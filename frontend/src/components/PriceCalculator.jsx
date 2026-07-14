@@ -22,9 +22,8 @@ export default function PriceCalculator({ user }) {
   // Form state
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({
-    name: '',
     category: '',
-    subcategory: '',
+    variants: [],
     calcMode: 'unit',
     basePrice: 0
   })
@@ -69,9 +68,8 @@ export default function PriceCalculator({ user }) {
   const selectProduct = (prod) => {
     setEditingId(prod._id)
     setForm({
-      name: prod.name,
       category: prod.category,
-      subcategory: prod.subcategory || '',
+      variants: prod.variants || [],
       calcMode: prod.calcMode,
       basePrice: prod.basePrice
     })
@@ -81,9 +79,8 @@ export default function PriceCalculator({ user }) {
   const handleNew = () => {
     setEditingId(null)
     setForm({
-      name: '',
       category: '',
-      subcategory: '',
+      variants: [],
       calcMode: 'unit',
       basePrice: 0
     })
@@ -111,7 +108,7 @@ export default function PriceCalculator({ user }) {
   }
 
   const handleSaveAsNew = async () => {
-    if (!form.name || !form.category || form.basePrice < 0) {
+    if (!form.category || form.basePrice < 0) {
       alert('Por favor completa todos los campos requeridos (*)');
       return;
     }
@@ -196,7 +193,7 @@ export default function PriceCalculator({ user }) {
                 <div>
                   <strong>{p.name}</strong>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    {p.category} {p.subcategory && `> ${p.subcategory}`}
+                    {p.category} {p.variants && p.variants.length > 0 && `(${p.variants.length} variantes)`}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', fontSize: '0.9rem' }}>
@@ -212,25 +209,52 @@ export default function PriceCalculator({ user }) {
 
         {/* Right Column: Editor & Calculator */}
         <div className="card">
-          <h2 className="card-title" style={{ marginBottom: '1rem' }}>
-            {editingId ? '✏️ Editar Producto' : '✨ Nuevo Producto'}
-          </h2>
+          <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+            <h2 className="card-title" style={{ marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              {editingId ? '✏️ EDITAR PRODUCTO' : '✨ NUEVO PRODUCTO'}
+            </h2>
+            <h3 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--accent)', minHeight: '35px' }}>
+              {[form.category, ...form.variants].filter(Boolean).join(' ') || 'Escribe una categoría...'}
+            </h3>
+          </div>
           
           <form onSubmit={handleSave} className="form-group" style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label className="form-label">Nombre del Producto *</label>
-              <input type="text" className="form-input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required placeholder="Ej: Malla Raschell 90%" />
+            
+            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+              <label className="form-label">Categoría *</label>
+              <input type="text" className="form-input" value={form.category} onChange={e => setForm({...form, category: e.target.value})} required placeholder="Ej: Malla" />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <div className="form-group">
-                <label className="form-label">Categoría *</label>
-                <input type="text" className="form-input" value={form.category} onChange={e => setForm({...form, category: e.target.value})} required placeholder="Ej: Malla Raschell" />
+            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <label className="form-label" style={{ margin: 0 }}>Variantes</label>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setForm({...form, variants: [...form.variants, '']})}>
+                  + Añadir Variante
+                </button>
               </div>
-              <div className="form-group">
-                <label className="form-label">Subcategoría</label>
-                <input type="text" className="form-input" value={form.subcategory} onChange={e => setForm({...form, subcategory: e.target.value})} placeholder="Ej: Rollo Verde" />
-              </div>
+              
+              {form.variants.length === 0 && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Sin variantes. (Ej: color, tamaño, espesor)</p>}
+              
+              {form.variants.map((variant, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={variant} 
+                    onChange={e => {
+                      const newVars = [...form.variants];
+                      newVars[idx] = e.target.value;
+                      setForm({...form, variants: newVars});
+                    }} 
+                    placeholder={`Variante ${idx + 1} (Ej: negra)`}
+                    required
+                  />
+                  <button type="button" className="btn-remove" onClick={() => {
+                    const newVars = form.variants.filter((_, i) => i !== idx);
+                    setForm({...form, variants: newVars});
+                  }}>✕</button>
+                </div>
+              ))}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>

@@ -39,17 +39,20 @@ router.get('/search', protect, async (req, res, next) => {
 // POST /api/catalog - Create a new product
 router.post('/', protect, async (req, res, next) => {
   try {
-    const { name, category, subcategory, calcMode, basePrice } = req.body;
+    const { category, variants = [], calcMode, basePrice } = req.body;
+    
+    // Generate name dynamically
+    const name = [category, ...variants].filter(Boolean).join(' ').trim();
     
     const productExists = await CatalogProduct.findOne({ facturador: req.user._id, name });
     if (productExists) {
-      return res.status(400).json({ error: 'Ya existe un producto con este nombre.' });
+      return res.status(400).json({ error: 'Ya existe un producto con esta combinación exacta.' });
     }
 
     const newProduct = new CatalogProduct({
       name,
       category,
-      subcategory,
+      variants,
       calcMode,
       basePrice,
       facturador: req.user._id
@@ -65,18 +68,20 @@ router.post('/', protect, async (req, res, next) => {
 // PUT /api/catalog/:id - Update a product
 router.put('/:id', protect, async (req, res, next) => {
   try {
-    const { name, category, subcategory, calcMode, basePrice } = req.body;
+    const { category, variants, calcMode, basePrice } = req.body;
     const product = await CatalogProduct.findOne({ _id: req.params.id, facturador: req.user._id });
 
     if (!product) {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
 
-    product.name = name || product.name;
     product.category = category || product.category;
-    if (subcategory !== undefined) product.subcategory = subcategory;
+    if (variants !== undefined) product.variants = variants;
     if (calcMode) product.calcMode = calcMode;
     if (basePrice !== undefined) product.basePrice = basePrice;
+    
+    // Update generated name
+    product.name = [product.category, ...product.variants].filter(Boolean).join(' ').trim();
 
     const saved = await product.save();
     res.json(saved);
