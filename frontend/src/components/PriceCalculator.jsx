@@ -1,6 +1,131 @@
 import { useState, useEffect } from 'react'
 import { getCatalogProducts, searchCatalog, createCatalogProduct, updateCatalogProduct, deleteCatalogProduct } from '../api/api'
 
+// Tree builder helpers
+const buildVariantGroups = (products, level) => {
+  if (products.length === 0) return []
+  
+  const hasVariantAtLevel = products.some(p => p.variants && p.variants.length > level)
+  if (!hasVariantAtLevel) {
+    return products.map(p => ({ type: 'product', data: p }))
+  }
+
+  const groups = {}
+  const leaves = []
+
+  products.forEach(p => {
+    const v = p.variants && p.variants[level] ? p.variants[level] : null
+    if (v) {
+      if (!groups[v]) groups[v] = []
+      groups[v].push(p)
+    } else {
+      leaves.push({ type: 'product', data: p })
+    }
+  })
+
+  let result = [...leaves]
+
+  Object.keys(groups).sort().forEach(vLabel => {
+    const gProducts = groups[vLabel]
+    if (gProducts.length > 3) {
+      result.push({
+        type: 'group',
+        label: vLabel,
+        children: buildVariantGroups(gProducts, level + 1)
+      })
+    } else {
+      result = result.concat(gProducts.map(p => ({ type: 'product', data: p })))
+    }
+  })
+
+  return result
+}
+
+const buildProductTree = (products) => {
+  const categories = {}
+  products.forEach(p => {
+    if (!categories[p.category]) categories[p.category] = []
+    categories[p.category].push(p)
+  })
+
+  const tree = []
+  Object.keys(categories).sort().forEach(catName => {
+    tree.push({
+      type: 'category',
+      label: catName,
+      children: buildVariantGroups(categories[catName], 0)
+    })
+  })
+  return tree
+}
+
+const TreeNode = ({ node, level, selectProduct, editingId }) => {
+  const [expanded, setExpanded] = useState(false)
+  const isCategory = node.type === 'category'
+  const isGroup = node.type === 'group'
+  
+  if (node.type === 'product') {
+    const p = node.data
+    return (
+      <div 
+        onClick={() => selectProduct(p)}
+        style={{ 
+          padding: '0.75rem 1rem', 
+          paddingLeft: `${1 + level * 1.5}rem`,
+          background: editingId === p._id ? 'var(--bg-input)' : (level > 0 ? 'rgba(255,255,255,0.03)' : 'transparent'),
+          borderBottom: '1px solid var(--border)',
+          cursor: 'pointer',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+        }}
+      >
+        <div>
+          <strong style={{ fontSize: '0.9rem' }}>{p.name}</strong>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+            {p.variants && p.variants.length > 0 && `(${p.variants.join(', ')})`}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', fontSize: '0.85rem' }}>
+          <div style={{ color: 'var(--accent)', fontWeight: 'bold' }}>S/ {p.basePrice.toFixed(2)}</div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+            {p.calcMode === 'area' ? 'por m²' : 'por unidad'}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div 
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          padding: '0.75rem 1rem',
+          paddingLeft: `${1 + (level > 0 ? level - 1 : 0) * 1.5}rem`,
+          background: isCategory ? (level % 2 === 0 ? 'rgba(30, 41, 59, 0.8)' : 'rgba(15, 23, 42, 0.8)') : 'rgba(255,255,255,0.05)',
+          borderBottom: '1px solid var(--border)',
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
+          fontWeight: 'bold',
+          color: isCategory ? 'var(--text)' : 'var(--text-secondary)'
+        }}
+      >
+        <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{expanded ? '▼' : '▶'}</span>
+        {isCategory ? `📁 ${node.label}` : `📂 Variante: ${node.label}`}
+        <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+          ({node.children.length} items)
+        </span>
+      </div>
+      {expanded && (
+        <div>
+          {node.children.map((child, idx) => (
+            <TreeNode key={idx} node={child} level={level + 1} selectProduct={selectProduct} editingId={editingId} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function PriceCalculator({ user }) {
   // Access control
   if (user?.role !== 'admin') {
@@ -176,33 +301,8 @@ export default function PriceCalculator({ user }) {
             {loading && <p style={{color:'var(--text-muted)'}}>Cargando...</p>}
             {!loading && products.length === 0 && <p style={{color:'var(--text-muted)'}}>No hay productos registrados.</p>}
             
-            {products.map(p => (
-              <div 
-                key={p._id} 
-                onClick={() => selectProduct(p)}
-                style={{ 
-                  padding: '1rem', 
-                  background: editingId === p._id ? 'var(--bg-input)' : 'transparent',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  marginBottom: '0.5rem',
-                  cursor: 'pointer',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                }}
-              >
-                <div>
-                  <strong>{p.name}</strong>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    {p.category} {p.variants && p.variants.length > 0 && `(${p.variants.length} variantes)`}
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right', fontSize: '0.9rem' }}>
-                  <div style={{ color: 'var(--accent)', fontWeight: 'bold' }}>S/ {p.basePrice.toFixed(2)}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {p.calcMode === 'area' ? 'por m²' : 'por unidad'}
-                  </div>
-                </div>
-              </div>
+            {buildProductTree(products).map((node, idx) => (
+              <TreeNode key={idx} node={node} level={0} selectProduct={selectProduct} editingId={editingId} />
             ))}
           </div>
         </div>

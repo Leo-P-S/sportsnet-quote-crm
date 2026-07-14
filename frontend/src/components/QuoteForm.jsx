@@ -24,7 +24,6 @@ export default function QuoteForm({ onQuoteCreated, user }) {
 
   // Catalog logic
   const [catalog, setCatalog] = useState([])
-  const [catalogCategories, setCatalogCategories] = useState([])
   const [focusedItemIndex, setFocusedItemIndex] = useState(null) // For autocomplete dropdown
 
   useEffect(() => {
@@ -35,8 +34,6 @@ export default function QuoteForm({ onQuoteCreated, user }) {
     try {
       const { data } = await getCatalogProducts()
       setCatalog(data)
-      const uniqueCats = [...new Set(data.map(p => p.category))]
-      setCatalogCategories(uniqueCats)
     } catch (err) {
       console.error(err)
     }
@@ -65,59 +62,24 @@ export default function QuoteForm({ onQuoteCreated, user }) {
   }
 
   // Items logic
-  const addItem = () => setItems([...items, { quantity: 1, unit: 'UNIDAD', description: '', unitPrice: 0, _categorySelected: null }])
+  const addItem = () => setItems([...items, { quantity: 1, unit: 'UNIDAD', description: '', unitPrice: 0 }])
   
   const updateItem = (index, field, value) => {
     const newItems = [...items]
     newItems[index][field] = value
-    
-    // Auto-detect category match when typing
-    if (field === 'description') {
-      const matchedCategory = catalogCategories.find(c => c.toLowerCase() === value.toLowerCase())
-      if (matchedCategory) {
-        selectCatalogCategory(index, matchedCategory, newItems)
-      } else {
-        newItems[index]._categorySelected = null
-        newItems[index]._variantProductSelected = ''
-      }
-    }
-    
     setItems(newItems)
   }
 
-  const selectCatalogCategory = (index, categoryName, itemsArray = items) => {
-    const newItems = [...itemsArray]
-    newItems[index].description = categoryName
-    newItems[index]._categorySelected = categoryName
-    newItems[index]._variantProductSelected = ''
-    
-    // Check if this category has products with variants
-    const categoryProducts = catalog.filter(p => p.category === categoryName)
-    const hasVariants = categoryProducts.some(p => p.variants && p.variants.length > 0)
-    
-    if (!hasVariants && categoryProducts.length === 1) {
-      // Single product category (no variants)
-      const prod = categoryProducts[0]
-      newItems[index].description = prod.name
-      newItems[index].unitPrice = prod.basePrice
-      newItems[index].unit = prod.calcMode === 'area' ? 'M2' : 'UNIDAD'
-    }
-    
-    setItems(newItems)
-    setFocusedItemIndex(null)
-  }
-
-  const selectVariantProduct = (index, productId) => {
+  const selectUniversalProduct = (index, productId) => {
     const newItems = [...items]
     const prod = catalog.find(p => p._id === productId)
     if (prod) {
-      newItems[index]._variantProductSelected = productId
       newItems[index].description = prod.name
       newItems[index].unitPrice = prod.basePrice
       newItems[index].unit = prod.calcMode === 'area' ? 'M2' : 'UNIDAD'
     }
-    
     setItems(newItems)
+    setFocusedItemIndex(null)
   }
 
   const removeItem = (index) => setItems(items.filter((_, i) => i !== index))
@@ -335,12 +297,14 @@ export default function QuoteForm({ onQuoteCreated, user }) {
               <div className="items-list">
                 {items.length === 0 && <p style={{color:'var(--text-muted)', fontSize:'0.9rem'}}>No hay productos.</p>}
                 {items.map((item, index) => {
-                  const categoryProducts = item._categorySelected ? catalog.filter(p => p.category === item._categorySelected) : []
-                  const showVariantDropdown = categoryProducts.length > 1 || (categoryProducts.length === 1 && categoryProducts[0].variants && categoryProducts[0].variants.length > 0)
-                  
-                  const suggestions = focusedItemIndex === index && item.description.length > 0 
-                    ? catalogCategories.filter(c => c.toLowerCase().includes(item.description.toLowerCase()) && c.toLowerCase() !== item.description.toLowerCase())
-                    : []
+                  let suggestions = []
+                  if (focusedItemIndex === index && item.description.length > 1) {
+                    const searchTerms = item.description.toLowerCase().split(' ').filter(Boolean)
+                    suggestions = catalog.filter(p => {
+                      const pName = p.name.toLowerCase()
+                      return searchTerms.every(term => pName.includes(term))
+                    }).slice(0, 8)
+                  }
 
                   return (
                     <div key={index} className="item-row" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -365,29 +329,14 @@ export default function QuoteForm({ onQuoteCreated, user }) {
                         />
                         {suggestions.length > 0 && (
                           <div className="autocomplete-dropdown" style={{ zIndex: 100 }}>
-                            {suggestions.map(cat => (
-                              <div key={cat} className="autocomplete-item" onClick={() => selectCatalogCategory(index, cat)}>
-                                <strong>{cat}</strong> (Catálogo)
+                            {suggestions.map(prod => (
+                              <div key={prod._id} className="autocomplete-item" onClick={() => selectUniversalProduct(index, prod._id)}>
+                                <strong>{prod.name}</strong>
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
-
-                      {showVariantDropdown && (
-                        <select 
-                          className="form-input" 
-                          style={{ flex: 1, minWidth: '150px', backgroundColor: 'var(--bg-input)' }} 
-                          value={item._variantProductSelected || ''}
-                          onChange={e => selectVariantProduct(index, e.target.value)}
-                          required
-                        >
-                          <option value="" disabled>Selecciona variante...</option>
-                          {categoryProducts.map(p => (
-                            <option key={p._id} value={p._id}>{p.variants?.join(' ') || 'Base'}</option>
-                          ))}
-                        </select>
-                      )}
 
                       <input type="number" step="0.01" className="form-input" placeholder="Precio Unit." style={{ width: '110px', flexShrink: 0 }} value={item.unitPrice} onChange={e => updateItem(index, 'unitPrice', parseFloat(e.target.value))} required />
                       <div className="item-total" style={{ width: '90px', flexShrink: 0, marginTop: '10px' }}>S/ {(item.quantity * item.unitPrice).toFixed(2)}</div>
