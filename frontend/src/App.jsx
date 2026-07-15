@@ -69,9 +69,6 @@ export default function App() {
         {activeTab === 'team' && user.role !== 'almacenador' && (
           <TeamManager user={user} />
         )}
-        {activeTab === 'inventory' && (user.role === 'almacenador' || user.role === 'admin') && (
-          <WarehouseDashboard user={user} />
-        )}
 
         <div style={{ textAlign: 'center', marginTop: '3rem', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
           SportNet CRM v1.4.2

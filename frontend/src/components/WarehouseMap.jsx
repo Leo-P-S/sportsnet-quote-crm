@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getShelves, updateShelf, getCatalogProducts, getInventory, updateInventory } from '../api/api'
+import { getShelves, createShelf, updateShelf, getCatalogProducts, getInventory, updateInventory } from '../api/api'
 
 export default function WarehouseMap({ user }) {
   const [shelves, setShelves] = useState([])
@@ -8,6 +8,12 @@ export default function WarehouseMap({ user }) {
   const [selectedSlot, setSelectedSlot] = useState(null) // para asignar inventario
   const [catalog, setCatalog] = useState([])
   const [inventory, setInventory] = useState([]) // all inventory items
+
+  // Builder State
+  const [showBuilder, setShowBuilder] = useState(false)
+  const [shelfForm, setShelfForm] = useState({ name: '', color: '#ef4444', gridRows: 3, gridCols: 5 })
+  const [assigningInv, setAssigningInv] = useState('')
+  const [quantities, setQuantities] = useState({}) // { invId: currentQuantity }
 
   useEffect(() => {
     fetchData()
@@ -40,7 +46,77 @@ export default function WarehouseMap({ user }) {
 
   const handleCloseModal = () => {
     setSelectedSlot(null)
+    setAssigningInv('')
     fetchData() // refresh to show newly assigned stuff
+  }
+
+  const handleCreateShelf = async (e) => {
+    e.preventDefault()
+    try {
+      const { name, color, gridRows, gridCols } = shelfForm
+      const slots = []
+      for(let r=0; r<gridRows; r++) {
+        for(let c=0; c<gridCols; c++) {
+          slots.push({ rowId: r, colId: c, colSpan: 1, rowSpan: 1 })
+        }
+      }
+      await createShelf({ name, color, gridRows, gridCols, slots })
+      setShowBuilder(false)
+      fetchData()
+    } catch (err) {
+      alert('Error creando estante')
+    }
+  }
+
+  const handleAssignToSlot = async () => {
+    if (!assigningInv) return
+    try {
+      const updatedSlots = [...activeShelf.slots]
+      const slotIndex = updatedSlots.findIndex(s => s._id === selectedSlot._id)
+      
+      if (!updatedSlots[slotIndex].inventoryIds) updatedSlots[slotIndex].inventoryIds = []
+      if (updatedSlots[slotIndex].inventoryIds.length >= 3) {
+        return alert('Máximo 3 productos por recuadro')
+      }
+      updatedSlots[slotIndex].inventoryIds.push(assigningInv)
+      
+      await updateShelf(activeShelf._id, { slots: updatedSlots })
+      setAssigningInv('')
+      
+      // Update local state temporarily to avoid re-fetching whole map instantly if not needed
+      // But fetching is safer
+      fetchData()
+      setSelectedSlot(updatedSlots[slotIndex]) // keep open but might need to refind it after fetch
+    } catch (err) {
+      alert('Error asignando producto')
+    }
+  }
+
+  const handleRemoveFromSlot = async (invId) => {
+    try {
+      const updatedSlots = [...activeShelf.slots]
+      const slotIndex = updatedSlots.findIndex(s => s._id === selectedSlot._id)
+      updatedSlots[slotIndex].inventoryIds = updatedSlots[slotIndex].inventoryIds.filter(i => {
+        const idStr = typeof i === 'object' ? i._id : i;
+        return idStr !== invId;
+      })
+      
+      await updateShelf(activeShelf._id, { slots: updatedSlots })
+      fetchData()
+      setSelectedSlot(updatedSlots[slotIndex])
+    } catch (err) {
+      alert('Error quitando producto')
+    }
+  }
+
+  const handleUpdateQuantity = async (invId) => {
+    try {
+      await updateInventory(invId, { currentQuantity: quantities[invId] || 0 })
+      alert('Cantidad actualizada')
+      fetchData()
+    } catch (err) {
+      alert('Error actualizando cantidad')
+    }
   }
 
   if (loading && shelves.length === 0) return <div className="page-container"><p>Cargando mapa...</p></div>
@@ -58,9 +134,12 @@ export default function WarehouseMap({ user }) {
 
   return (
     <div className="page-container">
-      <div className="page-header" style={{ marginBottom: '1rem' }}>
-        <h1 className="page-title">🗺️ Mapa 2D del Almacén</h1>
-        <p className="page-subtitle">Visualiza y asigna productos en las estanterías.</p>
+      <div className="page-header" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 className="page-title">🗺️ Mapa 2D del Almacén</h1>
+          <p className="page-subtitle">Visualiza y asigna productos en las estanterías.</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowBuilder(true)}>+ Nuevo Estante</button>
       </div>
 
       {/* Selector de Estante */}
@@ -164,11 +243,23 @@ export default function WarehouseMap({ user }) {
                       background: 'rgba(255,255,255,0.05)', padding: '0.8rem', borderRadius: '8px', marginBottom: '0.5rem',
                       border: '1px solid var(--border)'
                     }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                         <strong>{invItem.product?.name || 'Producto Desconocido'}</strong>
-                        <span style={{ color: 'var(--accent)' }}>{invItem.currentQuantity || 0} {invItem.unitMeasure || 'Cocos'}</span>
+                        <button onClick={() => handleRemoveFromSlot(invItem._id)} style={{background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer'}}>Quitar</button>
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Cód: {invItem.codigo}</div>
+                      
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <input 
+                          type="number" 
+                          className="form-input" 
+                          style={{ width: '100px', padding: '0.4rem' }}
+                          placeholder="Cantidad"
+                          value={quantities[invItem._id] !== undefined ? quantities[invItem._id] : (invItem.currentQuantity || 0)}
+                          onChange={(e) => setQuantities({...quantities, [invItem._id]: Number(e.target.value)})}
+                        />
+                        <span style={{ color: 'var(--text-secondary)' }}>{invItem.unitMeasure || 'Cocos'}</span>
+                        <button onClick={() => handleUpdateQuantity(invItem._id)} className="btn btn-secondary btn-sm">Guardar</button>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -177,9 +268,63 @@ export default function WarehouseMap({ user }) {
               )}
             </div>
 
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-              Nota: En futuras actualizaciones podrás buscar productos del catálogo e insertarlos directamente aquí, restando cantidades al vender.
-            </p>
+            {(!selectedSlot.inventoryIds || selectedSlot.inventoryIds.length < 3) && (
+              <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                <h4>Añadir Producto al Recuadro</h4>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '0.5rem' }}>
+                  <select 
+                    className="form-input" 
+                    value={assigningInv} 
+                    onChange={e => setAssigningInv(e.target.value)}
+                  >
+                    <option value="">Selecciona del inventario...</option>
+                    {inventory.map(inv => (
+                      <option key={inv._id} value={inv._id}>
+                        {inv.product?.name} (Cód: {inv.codigo})
+                      </option>
+                    ))}
+                  </select>
+                  <button onClick={handleAssignToSlot} className="btn btn-primary" disabled={!assigningInv}>Agregar</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Creador de Estantes */}
+      {showBuilder && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
+            <h3 style={{ marginTop: 0 }}>Construir Nuevo Estante</h3>
+            <form onSubmit={handleCreateShelf}>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Nombre del Estante</label>
+                <input type="text" className="form-input" required value={shelfForm.name} onChange={e => setShelfForm({...shelfForm, name: e.target.value})} placeholder="Ej. Estante F (Amarillo)" />
+              </div>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Color (Hexadecimal o Nombre)</label>
+                <input type="text" className="form-input" required value={shelfForm.color} onChange={e => setShelfForm({...shelfForm, color: e.target.value})} placeholder="#eab308" />
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem' }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Filas</label>
+                  <input type="number" min="1" max="20" className="form-input" required value={shelfForm.gridRows} onChange={e => setShelfForm({...shelfForm, gridRows: Number(e.target.value)})} />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Columnas</label>
+                  <input type="number" min="1" max="20" className="form-input" required value={shelfForm.gridCols} onChange={e => setShelfForm({...shelfForm, gridCols: Number(e.target.value)})} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowBuilder(false)} style={{ flex: 1 }}>Cancelar</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Construir</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

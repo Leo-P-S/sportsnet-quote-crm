@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getCatalogProducts, getInventory, createInventory, updateInventory } from '../api/api'
+import { getCatalogProducts, getInventory, createInventory, updateInventory, getShelves } from '../api/api'
 
 const STOCK_LEVELS = {
   none: { label: '🔴 Sin existencia', color: '#ef4444' },
@@ -12,6 +12,7 @@ const STOCK_LEVELS = {
 export default function WarehouseDashboard({ user }) {
   const [products, setProducts] = useState([])
   const [inventory, setInventory] = useState([])
+  const [shelves, setShelves] = useState([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   
@@ -26,13 +27,15 @@ export default function WarehouseDashboard({ user }) {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [prodRes, invRes] = await Promise.all([
+      const [prodRes, invRes, shelvesRes] = await Promise.all([
         getCatalogProducts(),
-        getInventory()
+        getInventory(),
+        getShelves()
       ])
       
       setProducts(prodRes.data)
       setInventory(invRes.data)
+      setShelves(shelvesRes.data)
     } catch (err) {
       console.error(err)
     } finally {
@@ -45,7 +48,6 @@ export default function WarehouseDashboard({ user }) {
     setEditingItem({ prod, invItem })
     setForm({
       codigo: invItem?.codigo || '',
-      ubicacion: invItem?.ubicacion || '',
       stockLevel: invItem?.stockLevel || 'none'
     })
   }
@@ -78,6 +80,23 @@ export default function WarehouseDashboard({ user }) {
     const fullName = `${p.category} ${p.variants?.join(' ') || ''}`.toLowerCase()
     return fullName.includes(search.toLowerCase())
   })
+
+  // Helper to find location
+  const getDynamicLocation = (invId) => {
+    if (!invId) return 'Sin asignar (Ir al mapa)'
+    for (const shelf of shelves) {
+      if (!shelf.slots) continue
+      for (const slot of shelf.slots) {
+        if (slot.inventoryIds && slot.inventoryIds.some(id => {
+          const idStr = typeof id === 'object' ? id._id : id
+          return idStr === invId
+        })) {
+          return `${shelf.name} (Fila ${slot.rowId + 1}, Col ${slot.colId + 1})`
+        }
+      }
+    }
+    return 'Sin asignar (Ir al mapa)'
+  }
 
   if (!user.facturadorId) {
     return (
@@ -140,8 +159,8 @@ export default function WarehouseDashboard({ user }) {
                       <strong style={{ display: 'block', marginBottom: '4px' }}>
                         {[p.category, ...(p.variants || [])].filter(Boolean).join(' ')}
                       </strong>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        {invItem ? `Ubicación: ${invItem.ubicacion || 'N/A'} | Cód: ${invItem.codigo}` : 'No registrado en almacén'}
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        Ubicación: <strong>{getDynamicLocation(invItem?._id)}</strong> | Cód: {invItem?.codigo || 'N/A'}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', fontSize: '0.85rem', color: stock.color, fontWeight: 'bold' }}>
@@ -172,12 +191,14 @@ export default function WarehouseDashboard({ user }) {
                 <input type="text" className="form-input" value={form.codigo} onChange={e => setForm({...form, codigo: e.target.value})} required placeholder="Ej: M-NEG-72" />
               </div>
 
-              <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                 <label className="form-label">Ubicación en Almacén</label>
-                <input type="text" className="form-input" value={form.ubicacion} onChange={e => setForm({...form, ubicacion: e.target.value})} placeholder="Ej: Pasillo A, Estante 3" />
+                <div style={{ padding: '0.8rem', background: 'var(--bg-card)', border: '1px dashed var(--border)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                  {editingItem.invItem ? getDynamicLocation(editingItem.invItem._id) : 'Guarda el código primero, luego ve al Mapa 2D para asignarle un recuadro.'}
+                </div>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+              <div className="form-group" style={{ marginBottom: '2rem' }}>
                 <label className="form-label">Nivel de Stock *</label>
                 <select className="form-input" value={form.stockLevel} onChange={e => setForm({...form, stockLevel: e.target.value})} style={{ color: STOCK_LEVELS[form.stockLevel].color, fontWeight: 'bold' }}>
                   {Object.entries(STOCK_LEVELS).map(([key, data]) => (

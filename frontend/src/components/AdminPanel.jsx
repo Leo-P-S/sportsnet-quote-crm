@@ -197,6 +197,7 @@ export default function AdminPanel() {
                 <label className="form-label">Rol del Sistema</label>
                 <select className="form-input" value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})}>
                   <option value="user">Usuario normal (Facturador)</option>
+                  <option value="almacenador">Almacenero</option>
                   <option value="admin">Administrador (Control total)</option>
                 </select>
               </div>
