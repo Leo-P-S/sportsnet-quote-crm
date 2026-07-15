@@ -120,6 +120,24 @@ body {
 
 .tab-icon { font-size: 1rem; }
 
+/* ── DROPDOWN MÁS ───────────────────────── */
+.more-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 160px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  margin-top: 10px;
+  z-index: 1000;
+}
+
 /* ── MAIN LAYOUT ─────────────────────────── */
 .main-content {
   max-width: 1100px;
@@ -753,6 +771,16 @@ body {
   }
 
   .tab-icon { font-size: 1.3rem; }
+
+  /* Dropdown changes direction on mobile (bottom up) */
+  .more-dropdown {
+    top: auto;
+    bottom: 100%;
+    right: 0;
+    margin-top: 0;
+    margin-bottom: 10px;
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.5);
+  }
 
   /* Increase Main Content Padding for Bottom Nav */
   .main-content {

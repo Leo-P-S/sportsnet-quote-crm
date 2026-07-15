@@ -88,10 +88,10 @@ export default function Navbar({ activeTab, setActiveTab, user, onLogout }) {
         ))}
 
         {moreTabs.length > 0 && (
-          <div style={{ position: 'relative', display: 'flex', flex: 1 }} ref={dropdownRef}>
+          <div style={{ position: 'relative' }} ref={dropdownRef}>
             <button
               className={`tab-btn ${isMoreTabActive ? 'active' : ''}`}
-              style={{ width: '100%', border: 'none' }}
+              style={{ border: 'none' }}
               onClick={() => setShowMore(!showMore)}
             >
               <span className="tab-icon">➕</span>
@@ -99,23 +99,7 @@ export default function Navbar({ activeTab, setActiveTab, user, onLogout }) {
             </button>
 
             {showMore && (
-              <div style={{
-                position: 'absolute',
-                bottom: '100%', // Para que salga hacia arriba desde la navbar
-                right: '0',
-                left: 'auto',
-                backgroundColor: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: '12px',
-                padding: '0.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.5rem',
-                minWidth: '160px',
-                boxShadow: '0 -4px 15px rgba(0,0,0,0.5)',
-                marginBottom: '10px',
-                zIndex: 1000
-              }}>
+              <div className="more-dropdown">
                 {moreTabs.map((tab) => (
                   <button
                     key={tab.id}
