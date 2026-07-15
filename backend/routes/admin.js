@@ -38,7 +38,7 @@ router.put('/users/:id/status', protect, adminOnly, async (req, res, next) => {
 // PUT /api/admin/users/:id - Edit user details
 router.put('/users/:id', protect, adminOnly, async (req, res, next) => {
   try {
-    const { name, companyName, ruc, address, role } = req.body;
+    const { name, companyName, ruc, address, role, password } = req.body;
     const user = await User.findById(req.params.id);
     
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -48,6 +48,7 @@ router.put('/users/:id', protect, adminOnly, async (req, res, next) => {
     user.ruc = ruc || user.ruc;
     user.address = address || user.address;
     if (role) user.role = role;
+    if (password) user.password = password;
 
     await user.save();
     res.json(user);

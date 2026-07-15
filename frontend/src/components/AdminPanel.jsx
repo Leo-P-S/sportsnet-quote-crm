@@ -15,7 +15,7 @@ export default function AdminPanel() {
   const [loadingViewData, setLoadingViewData] = useState(false)
 
   // Data for editing modal
-  const [editForm, setEditForm] = useState({ name: '', companyName: '', ruc: '', address: '', role: '' })
+  const [editForm, setEditForm] = useState({ name: '', companyName: '', ruc: '', address: '', role: '', password: '' })
 
   useEffect(() => {
     fetchUsers()
@@ -49,7 +49,8 @@ export default function AdminPanel() {
       companyName: user.companyName || '',
       ruc: user.ruc || '',
       address: user.address || '',
-      role: user.role || 'user'
+      role: user.role || 'user',
+      password: '' // default empty so it doesn't send unless changed
     })
   }
 
@@ -187,6 +188,10 @@ export default function AdminPanel() {
               <div className="form-group" style={{ marginBottom: '1rem' }}>
                 <label className="form-label">Dirección Fiscal</label>
                 <input type="text" className="form-input" value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} />
+              </div>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Cambiar Contraseña (Opcional)</label>
+                <input type="password" placeholder="Dejar en blanco para mantener actual" className="form-input" value={editForm.password} onChange={e => setEditForm({...editForm, password: e.target.value})} />
               </div>
               <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                 <label className="form-label">Rol del Sistema</label>
