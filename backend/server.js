@@ -39,6 +39,7 @@ const quoteRoutes = require('./routes/quote');
 const crmRoutes = require('./routes/crm');
 const catalogRoutes = require('./routes/catalog');
 const inventoryRoutes = require('./routes/inventory');
+const warehouseRoutes = require('./routes/warehouse');
 
 // Routes
 app.use('/api/auth', authLimiter, authRoutes);
@@ -47,6 +48,7 @@ app.use('/api/quote', quoteRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/catalog', catalogRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/warehouse', warehouseRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK' }));

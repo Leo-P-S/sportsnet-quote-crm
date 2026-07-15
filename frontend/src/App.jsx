@@ -10,6 +10,8 @@ import PriceCalculator from './components/PriceCalculator'
 import TeamManager from './components/TeamManager'
 import WarehouseDashboard from './components/WarehouseDashboard'
 
+import WarehouseMap from './components/WarehouseMap'
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('quote')
   const [lastQuote, setLastQuote] = useState(null)
@@ -55,9 +57,9 @@ export default function App() {
         {activeTab === 'customers' && user.role !== 'almacenador' && (
           <CustomerList />
         )}
-        {activeTab === 'profile' && (
-          <Profile user={user} setUser={setUser} />
-        )}
+        {activeTab === 'inventory' && <WarehouseDashboard user={user} />}
+        {activeTab === 'map' && <WarehouseMap user={user} />}
+        {activeTab === 'profile' && <Profile user={user} setUser={setUser} />}
         {activeTab === 'admin' && user.role === 'admin' && (
           <AdminPanel />
         )}

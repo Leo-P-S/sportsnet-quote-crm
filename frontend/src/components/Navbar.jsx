@@ -3,6 +3,7 @@ export default function Navbar({ activeTab, setActiveTab, user, onLogout }) {
   if (user?.role === 'almacenador') {
     tabs = [
       { id: 'inventory', label: 'Inventario', icon: '📦' },
+      { id: 'map', label: 'Mapa 2D', icon: '🗺️' },
       { id: 'profile', label: 'Perfil', icon: '⚙️' },
     ];
   } else {
@@ -11,6 +12,7 @@ export default function Navbar({ activeTab, setActiveTab, user, onLogout }) {
       { id: 'history', label: 'Historial', icon: '📚' },
       { id: 'customers', label: 'Clientes', icon: '👤' },
       { id: 'calculator', label: 'Catálogo', icon: '🧮' },
+      { id: 'map', label: 'Almacén 2D', icon: '🗺️' },
       { id: 'team', label: 'Equipo', icon: '👥' },
       { id: 'profile', label: 'Perfil', icon: '⚙️' },
     ];

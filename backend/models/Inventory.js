@@ -11,6 +11,8 @@ const InventorySchema = new Schema({
     enum: ['none', 'low', 'medium', 'high', 'full'], 
     default: 'none' 
   },
+  currentQuantity: { type: Number, default: 0 },
+  unitMeasure: { type: String, default: 'Cocos' },
   lastUpdated: { type: Date, default: Date.now }
 });
 

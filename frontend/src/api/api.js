@@ -52,4 +52,10 @@ export const getInventory = () => api.get('/inventory')
 export const createInventory = (data) => api.post('/inventory', data)
 export const updateInventory = (id, data) => api.put(`/inventory/${id}`, data)
 
+// Warehouse / 2D Map
+export const getShelves = () => api.get('/warehouse')
+export const createShelf = (data) => api.post('/warehouse', data)
+export const updateShelf = (id, data) => api.put(`/warehouse/${id}`, data)
+export const deleteShelf = (id) => api.delete(`/warehouse/${id}`)
+
 export default api
