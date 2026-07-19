@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getShelves, createShelf, updateShelf, getCatalogProducts, getInventory, updateInventory } from '../api/api'
+import { getShelves, createShelf, updateShelf, deleteShelf, getCatalogProducts, getInventory, updateInventory } from '../api/api'
 
 export default function WarehouseMap({ user }) {
   const [shelves, setShelves] = useState([])
@@ -11,6 +11,7 @@ export default function WarehouseMap({ user }) {
 
   // Builder State
   const [showBuilder, setShowBuilder] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [shelfForm, setShelfForm] = useState({ name: '', color: '#ef4444', gridRows: 3, gridCols: 5 })
   const [assigningInv, setAssigningInv] = useState('')
   const [quantities, setQuantities] = useState({}) // { invId: currentQuantity }
@@ -54,17 +55,143 @@ export default function WarehouseMap({ user }) {
     e.preventDefault()
     try {
       const { name, color, gridRows, gridCols } = shelfForm
-      const slots = []
-      for(let r=0; r<gridRows; r++) {
-        for(let c=0; c<gridCols; c++) {
-          slots.push({ rowId: r, colId: c, colSpan: 1, rowSpan: 1 })
+      
+      if (isEditing) {
+        // En modo edición, re-generamos slots conservando los existentes
+        const newSlots = []
+        for(let r=0; r<gridRows; r++) {
+          for(let c=0; c<gridCols; c++) {
+            // Buscamos si ya existía ese slot en el estante activo
+            const existingSlot = activeShelf.slots.find(s => s.rowId === r && s.colId === c)
+            if (existingSlot) {
+              newSlots.push(existingSlot)
+            } else {
+              newSlots.push({ rowId: r, colId: c, colSpan: 1, rowSpan: 1 })
+            }
+          }
         }
+        await updateShelf(activeShelf._id, { name, color, gridRows, gridCols, slots: newSlots })
+      } else {
+        const slots = []
+        for(let r=0; r<gridRows; r++) {
+          for(let c=0; c<gridCols; c++) {
+            slots.push({ rowId: r, colId: c, colSpan: 1, rowSpan: 1 })
+          }
+        }
+        await createShelf({ name, color, gridRows, gridCols, slots })
       }
-      await createShelf({ name, color, gridRows, gridCols, slots })
+      
       setShowBuilder(false)
+      setIsEditing(false)
       fetchData()
     } catch (err) {
-      alert('Error creando estante')
+      alert(isEditing ? 'Error editando estante' : 'Error creando estante')
+    }
+  }
+
+  const openEditShelf = () => {
+    if (!activeShelf) return
+    setIsEditing(true)
+    setShelfForm({
+      name: activeShelf.name,
+      color: activeShelf.color,
+      gridRows: activeShelf.gridRows,
+      gridCols: activeShelf.gridCols
+    })
+    setShowBuilder(true)
+  }
+
+  const handleDeleteShelf = async () => {
+    if (!activeShelf) return
+    const confirmed = window.confirm(`¿Estás seguro de que deseas eliminar el estante "${activeShelf.name}"? Esta acción no se puede deshacer. Los productos asignados a este estante quedarán sin ubicación en el inventario.`)
+    if (!confirmed) return
+    
+    try {
+      await deleteShelf(activeShelf._id)
+      setActiveShelf(null)
+      setShowBuilder(false)
+      setIsEditing(false)
+      fetchData()
+    } catch (err) {
+      alert('Error eliminando estante')
+    }
+  }
+
+  const handleMergeRight = async () => {
+    try {
+      const updatedSlots = [...activeShelf.slots]
+      const currentIndex = updatedSlots.findIndex(s => s._id === selectedSlot._id)
+      const current = updatedSlots[currentIndex]
+      
+      const rightIndex = updatedSlots.findIndex(s => s.rowId === current.rowId && s.colId === current.colId + current.colSpan)
+      if (rightIndex === -1) return alert('No hay recuadro a la derecha para combinar')
+      
+      const rightSlot = updatedSlots[rightIndex]
+      if (rightSlot.rowSpan !== current.rowSpan) return alert('Los recuadros deben tener el mismo alto para combinarse')
+      
+      current.colSpan += rightSlot.colSpan
+      if (rightSlot.inventoryIds && rightSlot.inventoryIds.length > 0) {
+         current.inventoryIds = [...(current.inventoryIds || []), ...rightSlot.inventoryIds]
+      }
+      
+      updatedSlots.splice(rightIndex, 1)
+      await updateShelf(activeShelf._id, { slots: updatedSlots })
+      fetchData()
+      setSelectedSlot(current)
+    } catch (err) {
+      console.error(err)
+      alert('Error combinando recuadros')
+    }
+  }
+
+  const handleMergeDown = async () => {
+    try {
+      const updatedSlots = [...activeShelf.slots]
+      const currentIndex = updatedSlots.findIndex(s => s._id === selectedSlot._id)
+      const current = updatedSlots[currentIndex]
+      
+      const downIndex = updatedSlots.findIndex(s => s.colId === current.colId && s.rowId === current.rowId + current.rowSpan)
+      if (downIndex === -1) return alert('No hay recuadro abajo para combinar')
+      
+      const downSlot = updatedSlots[downIndex]
+      if (downSlot.colSpan !== current.colSpan) return alert('Los recuadros deben tener el mismo ancho para combinarse')
+      
+      current.rowSpan += downSlot.rowSpan
+      if (downSlot.inventoryIds && downSlot.inventoryIds.length > 0) {
+         current.inventoryIds = [...(current.inventoryIds || []), ...downSlot.inventoryIds]
+      }
+      
+      updatedSlots.splice(downIndex, 1)
+      await updateShelf(activeShelf._id, { slots: updatedSlots })
+      fetchData()
+      setSelectedSlot(current)
+    } catch (err) {
+      console.error(err)
+      alert('Error combinando recuadros')
+    }
+  }
+
+  const handleResetSize = async () => {
+    try {
+      const updatedSlots = [...activeShelf.slots]
+      const currentIndex = updatedSlots.findIndex(s => s._id === selectedSlot._id)
+      const current = updatedSlots[currentIndex]
+      
+      for (let r = 0; r < current.rowSpan; r++) {
+        for (let c = 0; c < current.colSpan; c++) {
+          if (r === 0 && c === 0) continue
+          updatedSlots.push({ rowId: current.rowId + r, colId: current.colId + c, colSpan: 1, rowSpan: 1 })
+        }
+      }
+      current.rowSpan = 1
+      current.colSpan = 1
+      
+      await updateShelf(activeShelf._id, { slots: updatedSlots })
+      fetchData()
+      setSelectedSlot(current)
+    } catch (err) {
+      console.error(err)
+      alert('Error restaurando tamaño')
     }
   }
 
@@ -139,7 +266,11 @@ export default function WarehouseMap({ user }) {
           <h1 className="page-title">🗺️ Mapa 2D del Almacén</h1>
           <p className="page-subtitle">Visualiza y asigna productos en las estanterías.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowBuilder(true)}>+ Nuevo Estante</button>
+        <button className="btn btn-primary" onClick={() => {
+          setIsEditing(false)
+          setShelfForm({ name: '', color: '#ef4444', gridRows: 3, gridCols: 5 })
+          setShowBuilder(true)
+        }}>+ Nuevo Estante</button>
       </div>
 
       {/* Selector de Estante */}
@@ -164,9 +295,12 @@ export default function WarehouseMap({ user }) {
       {/* Renderizado del Estante Activo */}
       {activeShelf && (
         <div className="card" style={{ overflowX: 'auto' }}>
-          <h2 className="card-title" style={{ color: activeShelf.color, textAlign: 'center', marginBottom: '2rem' }}>
-            {activeShelf.name} (Vista Frontal)
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '2rem', gap: '1rem' }}>
+            <h2 className="card-title" style={{ color: activeShelf.color, margin: 0 }}>
+              {activeShelf.name} (Vista Frontal)
+            </h2>
+            <button onClick={openEditShelf} className="btn btn-secondary btn-sm" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}>✏️ Editar</button>
+          </div>
           
           <div style={{
             display: 'grid',
@@ -176,7 +310,8 @@ export default function WarehouseMap({ user }) {
             backgroundColor: '#1e293b',
             padding: '10px',
             borderRadius: '8px',
-            minWidth: `${activeShelf.gridCols * 40}px` // Ensure it doesn't crush on small screens
+            minWidth: `${activeShelf.gridCols * 40}px`, // Ensure it doesn't crush on small screens
+            boxSizing: 'border-box'
           }}>
             {activeShelf.slots.map((slot, idx) => {
               const hasProducts = slot.inventoryIds && slot.inventoryIds.length > 0;
@@ -231,8 +366,20 @@ export default function WarehouseMap({ user }) {
             </div>
             
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-              Fila {selectedSlot.rowId + 1}, Columna {selectedSlot.colId + 1}
+              Fila {selectedSlot.rowId + 1}, Columna {selectedSlot.colId + 1} 
+              {selectedSlot.colSpan > 1 || selectedSlot.rowSpan > 1 ? ` (Ocupa ${selectedSlot.colSpan}x${selectedSlot.rowSpan})` : ''}
             </p>
+
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+              <h4 style={{ margin: '0 0 0.8rem 0' }}>Estructura del Recuadro</h4>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button onClick={handleMergeRight} className="btn btn-secondary btn-sm" style={{flex: 1, fontSize: '0.75rem'}}>Combinar Derecha ➡️</button>
+                <button onClick={handleMergeDown} className="btn btn-secondary btn-sm" style={{flex: 1, fontSize: '0.75rem'}}>Combinar Abajo ⬇️</button>
+                {(selectedSlot.colSpan > 1 || selectedSlot.rowSpan > 1) && (
+                  <button onClick={handleResetSize} className="btn btn-secondary btn-sm" style={{flex: 1, fontSize: '0.75rem', color: 'var(--warning)'}}>🔄 Reiniciar Tamaño</button>
+                )}
+              </div>
+            </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
               <h4>Productos Asignados ({selectedSlot.inventoryIds?.length || 0}/3)</h4>
@@ -300,7 +447,12 @@ export default function WarehouseMap({ user }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
         }}>
           <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
-            <h3 style={{ marginTop: 0 }}>Construir Nuevo Estante</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0 }}>{isEditing ? 'Editar Estante' : 'Construir Nuevo Estante'}</h3>
+              {isEditing && (
+                <button type="button" onClick={handleDeleteShelf} className="btn-remove" style={{ width: 'auto', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem' }}>🗑️ Eliminar</button>
+              )}
+            </div>
             <form onSubmit={handleCreateShelf}>
               <div className="form-group" style={{ marginBottom: '1rem' }}>
                 <label className="form-label">Nombre del Estante</label>
@@ -322,7 +474,7 @@ export default function WarehouseMap({ user }) {
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowBuilder(false)} style={{ flex: 1 }}>Cancelar</button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Construir</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>{isEditing ? 'Guardar Cambios' : 'Construir'}</button>
               </div>
             </form>
           </div>
