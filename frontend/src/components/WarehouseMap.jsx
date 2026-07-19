@@ -57,25 +57,17 @@ export default function WarehouseMap({ user }) {
       const { name, color, gridRows, gridCols } = shelfForm
       
       if (isEditing) {
-        // En modo edición, re-generamos slots conservando los existentes
-        const newSlots = []
-        for(let r=0; r<gridRows; r++) {
-          for(let c=0; c<gridCols; c++) {
-            // Buscamos si ya existía ese slot en el estante activo
-            const existingSlot = activeShelf.slots.find(s => s.rowId === r && s.colId === c)
-            if (existingSlot) {
-              newSlots.push(existingSlot)
-            } else {
-              newSlots.push({ rowId: r, colId: c, colSpan: 1, rowSpan: 1 })
-            }
-          }
-        }
-        await updateShelf(activeShelf._id, { name, color, gridRows, gridCols, slots: newSlots })
+        // En modo Canvas, la edición del "tamaño" global (filas/columnas) no es tan relevante porque el usuario es dueño del lienzo.
+        // Pero si cambian el tamaño, lo permitimos y no borramos slots.
+        await updateShelf(activeShelf._id, { name, color, gridRows, gridCols })
       } else {
         const slots = []
+        // Generar malla inicial en porcentajes
+        const wPct = 100 / gridCols
+        const hPct = 100 / gridRows
         for(let r=0; r<gridRows; r++) {
           for(let c=0; c<gridCols; c++) {
-            slots.push({ rowId: r, colId: c, colSpan: 1, rowSpan: 1 })
+            slots.push({ rowId: (r * hPct), colId: (c * wPct), colSpan: wPct, rowSpan: hPct })
           }
         }
         await createShelf({ name, color, gridRows, gridCols, slots })
@@ -117,81 +109,53 @@ export default function WarehouseMap({ user }) {
     }
   }
 
-  const handleMergeRight = async () => {
+  const handleUpdateSlotCoord = (field, value) => {
+    const updatedSlots = [...activeShelf.slots]
+    const index = updatedSlots.findIndex(s => s._id === selectedSlot._id)
+    if (index === -1) return
+    updatedSlots[index] = { ...updatedSlots[index], [field]: Number(value) }
+    
+    setActiveShelf({ ...activeShelf, slots: updatedSlots })
+    setSelectedSlot(updatedSlots[index])
+  }
+
+  const handleSaveSlotSize = async () => {
     try {
-      const updatedSlots = [...activeShelf.slots]
-      const currentIndex = updatedSlots.findIndex(s => s._id === selectedSlot._id)
-      const current = updatedSlots[currentIndex]
-      
-      const rightIndex = updatedSlots.findIndex(s => s.rowId === current.rowId && s.colId === current.colId + current.colSpan)
-      if (rightIndex === -1) return alert('No hay recuadro a la derecha para combinar')
-      
-      const rightSlot = updatedSlots[rightIndex]
-      if (rightSlot.rowSpan !== current.rowSpan) return alert('Los recuadros deben tener el mismo alto para combinarse')
-      
-      current.colSpan += rightSlot.colSpan
-      if (rightSlot.inventoryIds && rightSlot.inventoryIds.length > 0) {
-         current.inventoryIds = [...(current.inventoryIds || []), ...rightSlot.inventoryIds]
-      }
-      
-      updatedSlots.splice(rightIndex, 1)
-      await updateShelf(activeShelf._id, { slots: updatedSlots })
-      fetchData()
-      setSelectedSlot(current)
+       await updateShelf(activeShelf._id, { slots: activeShelf.slots })
+       fetchData()
+       alert('Dimensiones guardadas')
     } catch (err) {
-      console.error(err)
-      alert('Error combinando recuadros')
+       alert('Error guardando dimensiones')
     }
   }
 
-  const handleMergeDown = async () => {
+  const handleCloneSlot = async () => {
     try {
       const updatedSlots = [...activeShelf.slots]
-      const currentIndex = updatedSlots.findIndex(s => s._id === selectedSlot._id)
-      const current = updatedSlots[currentIndex]
-      
-      const downIndex = updatedSlots.findIndex(s => s.colId === current.colId && s.rowId === current.rowId + current.rowSpan)
-      if (downIndex === -1) return alert('No hay recuadro abajo para combinar')
-      
-      const downSlot = updatedSlots[downIndex]
-      if (downSlot.colSpan !== current.colSpan) return alert('Los recuadros deben tener el mismo ancho para combinarse')
-      
-      current.rowSpan += downSlot.rowSpan
-      if (downSlot.inventoryIds && downSlot.inventoryIds.length > 0) {
-         current.inventoryIds = [...(current.inventoryIds || []), ...downSlot.inventoryIds]
-      }
-      
-      updatedSlots.splice(downIndex, 1)
-      await updateShelf(activeShelf._id, { slots: updatedSlots })
-      fetchData()
-      setSelectedSlot(current)
+      updatedSlots.push({
+         rowId: (selectedSlot.rowId + 5) % 100,
+         colId: (selectedSlot.colId + 5) % 100,
+         colSpan: selectedSlot.colSpan,
+         rowSpan: selectedSlot.rowSpan,
+         inventoryIds: []
+      })
+      const res = await updateShelf(activeShelf._id, { slots: updatedSlots })
+      setActiveShelf(res.data)
+      setSelectedSlot(res.data.slots[res.data.slots.length - 1])
     } catch (err) {
-      console.error(err)
-      alert('Error combinando recuadros')
+      alert('Error clonando recuadro')
     }
   }
 
-  const handleResetSize = async () => {
+  const handleDeleteSlot = async () => {
+    if (!window.confirm("¿Seguro que quieres eliminar esta caja? (Sus productos quedarán sin asignar)")) return
     try {
-      const updatedSlots = [...activeShelf.slots]
-      const currentIndex = updatedSlots.findIndex(s => s._id === selectedSlot._id)
-      const current = updatedSlots[currentIndex]
-      
-      for (let r = 0; r < current.rowSpan; r++) {
-        for (let c = 0; c < current.colSpan; c++) {
-          if (r === 0 && c === 0) continue
-          updatedSlots.push({ rowId: current.rowId + r, colId: current.colId + c, colSpan: 1, rowSpan: 1 })
-        }
-      }
-      current.rowSpan = 1
-      current.colSpan = 1
-      
-      await updateShelf(activeShelf._id, { slots: updatedSlots })
-      fetchData()
-      setSelectedSlot(current)
+      const updatedSlots = activeShelf.slots.filter(s => s._id !== selectedSlot._id)
+      const res = await updateShelf(activeShelf._id, { slots: updatedSlots })
+      setActiveShelf(res.data)
+      setSelectedSlot(null)
     } catch (err) {
-      console.error(err)
-      alert('Error restaurando tamaño')
+      alert('Error eliminando recuadro')
     }
   }
 
@@ -303,14 +267,11 @@ export default function WarehouseMap({ user }) {
           </div>
           
           <div style={{
-            display: 'grid',
-            gridTemplateRows: `repeat(${activeShelf.gridRows}, 60px)`,
-            gridTemplateColumns: `repeat(${activeShelf.gridCols}, minmax(40px, 1fr))`,
-            gap: '4px',
-            backgroundColor: '#1e293b',
-            padding: '10px',
-            borderRadius: '8px',
-            minWidth: `${activeShelf.gridCols * 40}px`, // Ensure it doesn't crush on small screens
+            position: 'relative',
+            width: '100%',
+            height: `${Math.max(300, activeShelf.gridRows * 80)}px`,
+            backgroundColor: '#000',
+            border: '4px solid #000',
             boxSizing: 'border-box'
           }}>
             {activeShelf.slots.map((slot, idx) => {
@@ -320,19 +281,21 @@ export default function WarehouseMap({ user }) {
                   key={idx}
                   onClick={() => handleSlotClick(slot)}
                   style={{
-                    gridRow: `${slot.rowId + 1} / span ${slot.rowSpan}`,
-                    gridColumn: `${slot.colId + 1} / span ${slot.colSpan}`,
+                    position: 'absolute',
+                    left: `${slot.colId}%`,
+                    top: `${slot.rowId}%`,
+                    width: `${slot.colSpan}%`,
+                    height: `${slot.rowSpan}%`,
                     backgroundColor: activeShelf.color,
-                    border: '2px solid rgba(0,0,0,0.5)',
-                    borderRadius: '4px',
+                    border: '2px solid #000',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     transition: 'all 0.2s',
-                    position: 'relative'
+                    boxSizing: 'border-box'
                   }}
-                  title={`Fila ${slot.rowId + 1}, Col ${slot.colId + 1}`}
+                  title={`Caja X: ${Number(slot.colId).toFixed(1)}%, Y: ${Number(slot.rowId).toFixed(1)}%`}
                   onMouseOver={(e) => e.currentTarget.style.filter = 'brightness(1.2)'}
                   onMouseOut={(e) => e.currentTarget.style.filter = 'brightness(1)'}
                 >
@@ -366,19 +329,36 @@ export default function WarehouseMap({ user }) {
             </div>
             
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-              Fila {selectedSlot.rowId + 1}, Columna {selectedSlot.colId + 1} 
-              {selectedSlot.colSpan > 1 || selectedSlot.rowSpan > 1 ? ` (Ocupa ${selectedSlot.colSpan}x${selectedSlot.rowSpan})` : ''}
+              ID: {selectedSlot._id?.substring(0, 8) || 'Nueva caja'}
             </p>
 
             <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-              <h4 style={{ margin: '0 0 0.8rem 0' }}>Estructura del Recuadro</h4>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <button onClick={handleMergeRight} className="btn btn-secondary btn-sm" style={{flex: 1, fontSize: '0.75rem'}}>Combinar Derecha ➡️</button>
-                <button onClick={handleMergeDown} className="btn btn-secondary btn-sm" style={{flex: 1, fontSize: '0.75rem'}}>Combinar Abajo ⬇️</button>
-                {(selectedSlot.colSpan > 1 || selectedSlot.rowSpan > 1) && (
-                  <button onClick={handleResetSize} className="btn btn-secondary btn-sm" style={{flex: 1, fontSize: '0.75rem', color: 'var(--warning)'}}>🔄 Reiniciar Tamaño</button>
-                )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                <h4 style={{ margin: 0 }}>Modo Canvas Absoluto</h4>
+                <div>
+                  <button onClick={handleCloneSlot} className="btn btn-secondary btn-sm" style={{ marginRight: '5px' }}>📄 Clonar</button>
+                  <button onClick={handleDeleteSlot} className="btn-remove btn-sm">🗑️ Borrar</button>
+                </div>
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div className="form-group">
+                  <label style={{ fontSize: '0.8rem' }}>Eje X (%)</label>
+                  <input type="number" step="any" className="form-input" value={selectedSlot.colId} onChange={(e) => handleUpdateSlotCoord('colId', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label style={{ fontSize: '0.8rem' }}>Eje Y (%)</label>
+                  <input type="number" step="any" className="form-input" value={selectedSlot.rowId} onChange={(e) => handleUpdateSlotCoord('rowId', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label style={{ fontSize: '0.8rem' }}>Ancho (%)</label>
+                  <input type="number" step="any" className="form-input" value={selectedSlot.colSpan} onChange={(e) => handleUpdateSlotCoord('colSpan', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label style={{ fontSize: '0.8rem' }}>Alto (%)</label>
+                  <input type="number" step="any" className="form-input" value={selectedSlot.rowSpan} onChange={(e) => handleUpdateSlotCoord('rowSpan', e.target.value)} />
+                </div>
+              </div>
+              <button onClick={handleSaveSlotSize} className="btn btn-primary btn-sm" style={{ width: '100%', marginTop: '10px' }}>Guardar Posición y Tamaño</button>
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
